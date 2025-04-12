@@ -1,119 +1,143 @@
-# Predictive Maintenance System
+# Banking Infrastructure Predictive Maintenance (PMBI)
 
-An advanced, multimodal predictive maintenance system that handles diverse data sources (sensor readings, ATM logs, server logs, IoT logs) to forecast potential device failures.
+A comprehensive predictive maintenance system for banking infrastructure, leveraging real-time monitoring, analytics, and machine learning to prevent equipment failures and optimize maintenance schedules.
 
 ## Features
 
-- Real-time sensor data monitoring
-- Log data analysis and correlation
-- Predictive maintenance using LSTM-based ML model
-- Interactive dashboard with visualizations
-- Configurable alert thresholds and rules
-- Device status monitoring
-- Comprehensive reporting
+- **Real-time Monitoring Dashboard**
 
-## System Architecture
+  - Device status tracking
+  - Sensor data visualization
+  - Health score monitoring
+  - Alert management
 
-The system consists of:
+- **Advanced Analytics**
 
-1. **Backend (FastAPI)**
+  - Predictive maintenance forecasting
+  - Trend analysis
+  - Cost optimization
+  - Performance metrics
 
-   - RESTful API endpoints
-   - ML model for predictions
-   - Data processing pipeline
+- **Infrastructure Management**
+  - Device inventory tracking
+  - Maintenance scheduling
+  - Alert history
+  - Cost tracking
 
-2. **Frontend (React)**
-   - Interactive dashboard
-   - Real-time data visualization
-   - Alert management
-   - Settings configuration
-
-## Prerequisites
-
-- Docker and Docker Compose
-- Python 3.9+
-- Node.js 16+
-
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone <repository-url>
-   cd predictive-maintenance-system
-   ```
-
-2. Build and start the containers:
-
-   ```bash
-   docker-compose up --build
-   ```
-
-3. Access the application:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-
-## Development Setup
-
-### Backend
-
-1. Create a virtual environment:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the backend server:
-   ```bash
-   uvicorn backend.main:app --reload
-   ```
+## Tech Stack
 
 ### Frontend
 
-1. Install dependencies:
+- React.js
+- Material-UI
+- Recharts for data visualization
+- Axios for API communication
 
-   ```bash
-   cd frontend
-   npm install
-   ```
+### Backend
 
-2. Start the development server:
-   ```bash
-   npm start
-   ```
+- FastAPI (Python)
+- TensorFlow for ML models
+- SQLAlchemy for database
+- Pandas for data processing
 
-## API Documentation
+## Getting Started
 
-The backend API documentation is available at:
+### Prerequisites
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Node.js (v14 or higher)
+- Python 3.8+
+- pip
+- Git
 
-## Data Generation
+### Installation
 
-The system includes a synthetic data generator for testing purposes. To generate sample data:
+1. Clone the repository
 
-```python
-python data_generator.py
+```bash
+git clone https://github.com/RavitejaUppulapu/PMBI.git
+cd PMBI
 ```
 
-This will create a `multimodal_data.csv` file with sample sensor and log data.
+2. Set up the backend
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+3. Set up the frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The application will be available at:
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+## Project Structure
+
+```
+PMBI/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.js
+│   │   │   ├── DeviceStatus.js
+│   │   │   ├── Reports.js
+│   │   │   └── ...
+│   │   └── ...
+│   └── ...
+├── backend/
+│   ├── app.py
+│   ├── ml_model.py
+│   └── ...
+└── ...
+```
+
+## Key Features
+
+### Real-time Monitoring
+
+- Temperature, humidity, and vibration monitoring
+- Device status tracking
+- Alert generation and management
+
+### Predictive Analytics
+
+- Failure prediction
+- Maintenance scheduling
+- Cost optimization
+- Trend analysis
+
+### Reporting
+
+- Customizable dashboards
+- Historical data analysis
+- Cost tracking
+- Performance metrics
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Material-UI for the component library
+- Recharts for the charting library
+- FastAPI for the backend framework
