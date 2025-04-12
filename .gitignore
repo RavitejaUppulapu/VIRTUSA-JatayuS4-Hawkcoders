@@ -32,6 +32,8 @@ __pycache__/
 /backend/venv/
 /backend/.env
 /backend/*.log
+.venv/
+venv/
 
 # Distribution / packaging
 .Python

@@ -46,7 +46,7 @@ const Reports = () => {
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [selectedMetric, setSelectedMetric] = useState("temperature");
   const [timeRange, setTimeRange] = useState("24h");
-  const [maintenanceHistory, setMaintenanceHistory] = useState([
+  const [maintenanceHistory] = useState([
     {
       id: 1,
       device: "ATM_001",
