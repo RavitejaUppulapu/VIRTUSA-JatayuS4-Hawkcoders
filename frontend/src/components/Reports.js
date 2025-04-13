@@ -35,151 +35,188 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
+import { Download as DownloadIcon } from "@mui/icons-material";
 import axios from "axios";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sensorData, setSensorData] = useState([]);
   const [devices, setDevices] = useState([]);
-  const [alerts, setAlerts] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [selectedMetric, setSelectedMetric] = useState("temperature");
   const [timeRange, setTimeRange] = useState("24h");
-  const [maintenanceHistory] = useState([
-    {
-      id: 1,
-      device: "ATM_001",
-      date: "2024-03-15",
-      type: "Preventive",
-      cost: 250,
-    },
-    {
-      id: 2,
-      device: "UPS_001",
-      date: "2024-03-14",
-      type: "Corrective",
-      cost: 500,
-    },
-    {
-      id: 3,
-      device: "AC_001",
-      date: "2024-03-13",
-      type: "Predictive",
-      cost: 150,
-    },
-  ]);
+  const [sensorData, setSensorData] = useState({});
+  const [alerts, setAlerts] = useState([]);
+  const [maintenanceHistory, setMaintenanceHistory] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [sensorResponse, devicesResponse, alertsResponse] =
-          await Promise.all([
-            axios.get("http://localhost:8000/sensor-data"),
-            axios.get("http://localhost:8000/devices"),
-            axios.get("http://localhost:8000/alerts"),
-          ]);
-        setSensorData(sensorResponse.data);
-        setDevices(devicesResponse.data);
-        setAlerts(alertsResponse.data);
+        const [devicesRes, sensorRes, alertsRes] = await Promise.all([
+          axios.get("http://localhost:8000/devices"),
+          axios.get("http://localhost:8000/sensor-data"),
+          axios.get("http://localhost:8000/alerts"),
+        ]);
+
+        setDevices(devicesRes.data);
+        setSensorData(sensorRes.data);
+        setAlerts(alertsRes.data);
+
+        // Process maintenance history from alerts
+        const history = alertsRes.data
+          .filter((alert) => alert.alert_type === "PREDICTIVE_MAINTENANCE")
+          .map((alert) => ({
+            id: alert.id,
+            device:
+              devicesRes.data.find((d) => d.id === alert.device_id)?.name ||
+              alert.device_id,
+            date: new Date(alert.timestamp).toLocaleDateString(),
+            type: "Predictive",
+            cost: alert.details?.cost || 150,
+            status: alert.acknowledged ? "Completed" : "Pending",
+            severity: alert.severity,
+          }))
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        setMaintenanceHistory(history);
         setError(null);
-      } catch (err) {
+      } catch (error) {
         setError("Failed to fetch report data");
-        console.error("Error fetching data:", err);
+        console.error("Error fetching report data:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const filterData = () => {
-    let filtered = [...sensorData];
-    if (selectedDevice !== "all") {
-      filtered = filtered.filter((d) => d.device_id === selectedDevice);
-    }
-    return filtered;
-  };
-
-  const calculateStats = () => {
-    const data = filterData();
-    const stats = {
-      [selectedMetric]: {
-        avg: 0,
-        max: 0,
-        min: Infinity,
-        trend: "stable",
-      },
-    };
-
-    data.forEach((d, index) => {
-      stats[selectedMetric].avg += d[selectedMetric];
-      stats[selectedMetric].max = Math.max(
-        stats[selectedMetric].max,
-        d[selectedMetric]
-      );
-      stats[selectedMetric].min = Math.min(
-        stats[selectedMetric].min,
-        d[selectedMetric]
-      );
-
-      if (index > 0) {
-        const diff = d[selectedMetric] - data[index - 1][selectedMetric];
-        if (Math.abs(diff) > 5) {
-          stats[selectedMetric].trend = diff > 0 ? "increasing" : "decreasing";
-        }
-      }
-    });
-
-    stats[selectedMetric].avg /= data.length || 1;
-    return stats;
-  };
-
   const getDeviceStatusDistribution = () => {
-    const distribution = devices.reduce((acc, device) => {
+    const statusCount = devices.reduce((acc, device) => {
       acc[device.status] = (acc[device.status] || 0) + 1;
       return acc;
     }, {});
 
-    return Object.entries(distribution).map(([status, count]) => ({
-      name: status,
-      value: count,
-    }));
+    const total = devices.length;
+    return [
+      {
+        name: "healthy",
+        value: ((statusCount.healthy || 0) / total) * 100,
+        color: "#00C49F",
+      },
+      {
+        name: "warning",
+        value: ((statusCount.warning || 0) / total) * 100,
+        color: "#FFBB28",
+      },
+    ];
   };
 
-  const getMaintenanceCostByType = () => {
-    const costByType = maintenanceHistory.reduce((acc, maintenance) => {
-      acc[maintenance.type] = (acc[maintenance.type] || 0) + maintenance.cost;
-      return acc;
-    }, {});
-
-    return Object.entries(costByType).map(([type, cost]) => ({
-      name: type,
-      value: cost,
-    }));
+  const getMaintenanceCostDistribution = () => {
+    return [
+      { name: "Preventive", value: 250, color: "#00C49F" },
+      { name: "Corrective", value: 500, color: "#FFBB28" },
+      { name: "Predictive", value: 150, color: "#FF8042" },
+    ];
   };
 
   const getAlertTrends = () => {
-    const last7Days = [...Array(7)].map((_, i) => {
+    const last7Days = Array.from({ length: 7 }).map((_, index) => {
       const date = new Date();
-      date.setDate(date.getDate() - i);
+      date.setDate(date.getDate() - (6 - index));
       return date.toISOString().split("T")[0];
     });
 
-    return last7Days
-      .map((date) => ({
-        date,
-        critical: alerts.filter(
-          (a) => a.severity === "critical" && a.timestamp.startsWith(date)
+    return last7Days.map((date) => {
+      const dayAlerts = alerts.filter((alert) =>
+        alert.timestamp.startsWith(date)
+      );
+
+      return {
+        date: new Date(date).toLocaleDateString(),
+        "Critical Alerts": dayAlerts.filter((a) => a.severity > 7).length,
+        "Warning Alerts": dayAlerts.filter(
+          (a) => a.severity > 4 && a.severity <= 7
         ).length,
-        warning: alerts.filter(
-          (a) => a.severity === "warning" && a.timestamp.startsWith(date)
-        ).length,
-      }))
-      .reverse();
+        "Info Alerts": dayAlerts.filter((a) => a.severity <= 4).length,
+      };
+    });
+  };
+
+  const getFilteredSensorData = () => {
+    if (!sensorData || Object.keys(sensorData).length === 0) {
+      return [];
+    }
+
+    let filteredData = [];
+    const now = new Date();
+    const timeRangeHours =
+      timeRange === "24h" ? 24 : timeRange === "7d" ? 168 : 720;
+
+    if (selectedDevice === "all") {
+      // Combine data from all devices
+      Object.values(sensorData).forEach((deviceData) => {
+        deviceData.forEach((reading) => {
+          const readingTime = new Date(reading.timestamp);
+          const hoursDiff = (now - readingTime) / (1000 * 60 * 60);
+
+          if (hoursDiff <= timeRangeHours) {
+            filteredData.push({
+              timestamp: reading.timestamp,
+              [selectedMetric]: reading[selectedMetric],
+            });
+          }
+        });
+      });
+    } else {
+      // Get data for selected device
+      const deviceData = sensorData[selectedDevice] || [];
+      filteredData = deviceData
+        .filter((reading) => {
+          const readingTime = new Date(reading.timestamp);
+          const hoursDiff = (now - readingTime) / (1000 * 60 * 60);
+          return hoursDiff <= timeRangeHours;
+        })
+        .map((reading) => ({
+          timestamp: reading.timestamp,
+          [selectedMetric]: reading[selectedMetric],
+        }));
+    }
+
+    // Sort by timestamp
+    filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return filteredData;
+  };
+
+  const exportToPDF = async () => {
+    const input = document.getElementById("reports-container");
+    const canvas = await html2canvas(input);
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 30;
+
+    pdf.setFontSize(18);
+    pdf.text("Predictive Maintenance Report", 20, 20);
+    pdf.addImage(
+      imgData,
+      "PNG",
+      imgX,
+      imgY,
+      imgWidth * ratio,
+      imgHeight * ratio
+    );
+    pdf.save("maintenance-report.pdf");
   };
 
   if (loading) {
@@ -188,7 +225,7 @@ const Reports = () => {
         display="flex"
         justifyContent="center"
         alignItems="center"
-        minHeight="200px"
+        minHeight="400px"
       >
         <CircularProgress />
       </Box>
@@ -203,16 +240,26 @@ const Reports = () => {
     );
   }
 
-  const stats = calculateStats();
-  const COLORS = ["#00C49F", "#FFBB28", "#FF8042"];
-
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Banking Infrastructure Analytics
-      </Typography>
+    <Box p={3} id="reports-container">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4">Maintenance Reports</Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<DownloadIcon />}
+          onClick={exportToPDF}
+        >
+          Export as PDF
+        </Button>
+      </Box>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
           <FormControl fullWidth>
             <InputLabel>Device</InputLabel>
@@ -261,205 +308,174 @@ const Reports = () => {
       </Grid>
 
       <Grid container spacing={3}>
+        {/* Temperature Trends */}
         <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                {selectedMetric.charAt(0).toUpperCase() +
-                  selectedMetric.slice(1)}{" "}
-                Trends
-              </Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart
-                  data={filterData()}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}{" "}
+              Trends
+            </Typography>
+            <Box height={300}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={getFilteredSensorData()}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" />
+                  <XAxis
+                    dataKey="timestamp"
+                    tickFormatter={(timestamp) =>
+                      new Date(timestamp).toLocaleTimeString()
+                    }
+                  />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip
+                    labelFormatter={(timestamp) =>
+                      new Date(timestamp).toLocaleString()
+                    }
+                  />
                   <Legend />
                   <Line
                     type="monotone"
                     dataKey={selectedMetric}
                     stroke="#8884d8"
-                    name={
-                      selectedMetric.charAt(0).toUpperCase() +
-                      selectedMetric.slice(1)
-                    }
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Grid>
+
+        {/* Infrastructure Health Distribution */}
         <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Infrastructure Health Distribution
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Infrastructure Health Distribution
+            </Typography>
+            <Box height={300}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={getDeviceStatusDistribution()}
+                    dataKey="value"
+                    nameKey="name"
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
+                    label={({ name, value }) => `${name} ${value.toFixed(0)}%`}
                   >
                     {getDeviceStatusDistribution().map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Alert Trends (Last 7 Days)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+        {/* Alert Trends */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Alert Trends (Last 7 Days)
+            </Typography>
+            <Box height={300}>
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={getAlertTrends()}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar
-                    dataKey="critical"
-                    fill="#ff4444"
-                    name="Critical Alerts"
-                  />
-                  <Bar dataKey="warning" fill="#ffbb33" name="Warning Alerts" />
+                  <Bar dataKey="Critical Alerts" fill="#ff4444" />
+                  <Bar dataKey="Warning Alerts" fill="#ffbb33" />
+                  <Bar dataKey="Info Alerts" fill="#00C851" />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Maintenance Cost Distribution
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+        {/* Maintenance Cost Distribution */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Maintenance Cost Distribution
+            </Typography>
+            <Box height={300}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={getMaintenanceCostByType()}
+                    data={getMaintenanceCostDistribution()}
+                    dataKey="value"
+                    nameKey="name"
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
                     outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: $${value}`}
+                    label={({ name, value }) => `${name} $${value}`}
                   >
-                    {getMaintenanceCostByType().map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
+                    {getMaintenanceCostDistribution().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Grid>
 
+        {/* Recent Maintenance History */}
         <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Maintenance History
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Device</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Cost</TableCell>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Recent Maintenance History
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Device</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Cost ($)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {maintenanceHistory.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>{record.date}</TableCell>
+                      <TableCell>{record.device}</TableCell>
+                      <TableCell>{record.type}</TableCell>
+                      <TableCell>
+                        <Typography
+                          component="span"
+                          sx={{
+                            color:
+                              record.status === "Completed"
+                                ? "success.main"
+                                : "warning.main",
+                            fontWeight: "medium",
+                          }}
+                        >
+                          {record.status}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">${record.cost}</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {maintenanceHistory.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>{record.device}</TableCell>
-                        <TableCell>{record.date}</TableCell>
-                        <TableCell>{record.type}</TableCell>
-                        <TableCell>${record.cost}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Current Metrics
-              </Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={3}>
-                  <Typography variant="subtitle1">Average</Typography>
-                  <Typography variant="h4">
-                    {stats[selectedMetric].avg.toFixed(2)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Trend: {stats[selectedMetric].trend}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Typography variant="subtitle1">Maximum</Typography>
-                  <Typography variant="h4">
-                    {stats[selectedMetric].max.toFixed(2)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Typography variant="subtitle1">Minimum</Typography>
-                  <Typography variant="h4">
-                    {stats[selectedMetric].min.toFixed(2)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Typography variant="subtitle1">Alert Count (24h)</Typography>
-                  <Typography variant="h4">
-                    {
-                      alerts.filter((a) => {
-                        const alertTime = new Date(a.timestamp);
-                        const now = new Date();
-                        return now - alertTime < 24 * 60 * 60 * 1000;
-                      }).length
-                    }
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+                  ))}
+                  {maintenanceHistory.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No maintenance history available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         </Grid>
       </Grid>
     </Box>

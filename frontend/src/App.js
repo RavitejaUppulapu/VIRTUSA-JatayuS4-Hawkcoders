@@ -25,9 +25,84 @@ import Alerts from "./components/Alerts";
 import DeviceStatus from "./components/DeviceStatus";
 import Reports from "./components/Reports";
 import Settings from "./components/Settings";
+import Layout from "./components/Layout";
+import AIChat from "./components/AIChat";
 import "./App.css";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 
 const drawerWidth = 240;
+
+// Create a custom theme with improved colors
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#1976d2",
+      light: "#42a5f5",
+      dark: "#1565c0",
+    },
+    secondary: {
+      main: "#9c27b0",
+      light: "#ba68c8",
+      dark: "#7b1fa2",
+    },
+    error: {
+      main: "#d32f2f",
+      light: "#ef5350",
+      dark: "#c62828",
+    },
+    warning: {
+      main: "#ed6c02",
+      light: "#ff9800",
+      dark: "#e65100",
+    },
+    info: {
+      main: "#0288d1",
+      light: "#03a9f4",
+      dark: "#01579b",
+    },
+    success: {
+      main: "#2e7d32",
+      light: "#4caf50",
+      dark: "#1b5e20",
+    },
+    background: {
+      default: "#f5f5f5",
+      paper: "#ffffff",
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: "none",
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 6,
+        },
+      },
+    },
+  },
+});
 
 function App() {
   const menuItems = [
@@ -39,58 +114,10 @@ function App() {
   ];
 
   return (
-    <Router>
-      <Box sx={{ display: "flex" }}>
-        <CssBaseline />
-        <AppBar
-          position="fixed"
-          sx={{
-            width: `calc(100% - ${drawerWidth}px)`,
-            ml: `${drawerWidth}px`,
-          }}
-        >
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div">
-              Predictive Maintenance System
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <Drawer
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
-              width: drawerWidth,
-              boxSizing: "border-box",
-            },
-          }}
-          variant="permanent"
-          anchor="left"
-        >
-          <Toolbar>
-            <Typography variant="h6" noWrap component="div">
-              Menu
-            </Typography>
-          </Toolbar>
-          <Divider />
-          <List>
-            {menuItems.map((item) => (
-              <ListItem button key={item.text} component={Link} to={item.path}>
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            bgcolor: "background.default",
-            p: 3,
-            mt: 8,
-          }}
-        >
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/device-status" element={<DeviceStatus />} />
@@ -98,9 +125,10 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
-        </Box>
-      </Box>
-    </Router>
+          <AIChat />
+        </Layout>
+      </Router>
+    </ThemeProvider>
   );
 }
 

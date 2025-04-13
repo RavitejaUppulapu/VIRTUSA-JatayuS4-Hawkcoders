@@ -40,6 +40,28 @@ settings = {
     }
 }
 
+# Store historical sensor data
+sensor_history = {}
+
+def generate_sensor_history():
+    for device_id, device in devices.items():
+        if device_id not in sensor_history:
+            sensor_history[device_id] = []
+        
+        # Generate last 10 readings with small variations
+        base_temp = device["sensors"]["temperature"]
+        base_humidity = device["sensors"]["humidity"]
+        base_vibration = device["sensors"]["vibration"]
+        
+        for i in range(10):
+            reading = {
+                "temperature": round(base_temp + random.uniform(-2, 2), 1),
+                "humidity": round(base_humidity + random.uniform(-5, 5)),
+                "vibration": round(base_vibration + random.uniform(-0.3, 0.3), 2),
+                "timestamp": (datetime.now() - timedelta(minutes=i*5)).isoformat()
+            }
+            sensor_history[device_id].append(reading)
+
 # Initialize mock data
 def init_mock_data():
     # Add mock devices for banking infrastructure
@@ -149,6 +171,9 @@ def init_mock_data():
 # Initialize mock data on startup
 init_mock_data()
 
+# Generate initial sensor history
+generate_sensor_history()
+
 class Device(BaseModel):
     id: str
     name: str
@@ -185,6 +210,9 @@ class Settings(BaseModel):
     thresholds: Dict[str, ThresholdSettings]
     notifications: NotificationSettings
 
+class ChatMessage(BaseModel):
+    message: str
+
 @app.get("/")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
@@ -195,15 +223,9 @@ async def get_device_status():
 
 @app.get("/sensor-data")
 async def get_sensor_data():
-    sensor_data = []
-    for device_id, device in devices.items():
-        data = {
-            "device_id": device_id,
-            "timestamp": datetime.now().isoformat(),
-            **device["sensors"]
-        }
-        sensor_data.append(data)
-    return sensor_data
+    # Update sensor history before returning
+    generate_sensor_history()
+    return sensor_history
 
 @app.get("/devices")
 async def get_devices():
@@ -317,6 +339,38 @@ def send_notifications(alerts: List[dict]):
     if settings["notifications"]["sms"]:
         for alert in alerts:
             print(f"Sending SMS notification for alert {alert['id']}")
+
+@app.post("/ai-chat")
+async def chat_with_ai(message: ChatMessage):
+    try:
+        # Mock AI responses based on keywords
+        response = get_mock_ai_response(message.message.lower())
+        return {"response": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def get_mock_ai_response(message: str) -> str:
+    # Simple keyword-based response system
+    if "temperature" in message:
+        return "High temperatures can indicate cooling system issues or overload. I recommend:\n1. Check cooling fans\n2. Verify airflow isn't blocked\n3. Monitor server load\n4. Ensure HVAC is functioning properly"
+    
+    elif "humidity" in message:
+        return "Abnormal humidity levels can damage equipment. Here's what to check:\n1. Check for water leaks\n2. Verify HVAC dehumidification\n3. Monitor condensation\n4. Consider adding humidity sensors"
+    
+    elif "vibration" in message:
+        return "Excessive vibration often indicates mechanical issues:\n1. Check for loose components\n2. Inspect fan bearings\n3. Verify equipment mounting\n4. Consider preventive maintenance"
+    
+    elif "maintenance" in message:
+        return "For maintenance best practices:\n1. Schedule regular inspections\n2. Keep detailed maintenance logs\n3. Monitor performance metrics\n4. Follow manufacturer guidelines\n5. Train staff on procedures"
+    
+    elif "alert" in message:
+        return "To manage alerts effectively:\n1. Set appropriate thresholds\n2. Prioritize critical alerts\n3. Document response procedures\n4. Maintain escalation protocols\n5. Review alert history regularly"
+    
+    elif "help" in message:
+        return "I can help you with:\n- Temperature issues\n- Humidity concerns\n- Vibration problems\n- Maintenance procedures\n- Alert management\n- Best practices\n\nJust ask about any of these topics!"
+    
+    else:
+        return "I'm here to help with maintenance and monitoring. You can ask about:\n- Device issues (temperature, humidity, vibration)\n- Maintenance procedures\n- Alert management\n- Best practices\n\nWhat would you like to know?"
 
 if __name__ == "__main__":
     import uvicorn
