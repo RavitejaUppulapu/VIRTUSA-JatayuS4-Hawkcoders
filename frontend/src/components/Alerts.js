@@ -73,6 +73,12 @@ const Alerts = () => {
   const [orderBy, setOrderBy] = useState("timestamp");
   const [order, setOrder] = useState("desc");
   const [alertTrends, setAlertTrends] = useState([]);
+  const [alertStats, setAlertStats] = useState({
+    total: 0,
+    hardware: 0,
+    software: 0,
+    maintenance: 0,
+  });
 
   const [stats, setStats] = useState({
     critical: 0,
@@ -84,52 +90,102 @@ const Alerts = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [alertsRes, devicesRes] = await Promise.all([
-        axios.get("http://localhost:8000/alerts"),
-        axios.get("http://localhost:8000/devices"),
+      const [alertsResponse, devicesResponse] = await Promise.all([
+        fetch("http://localhost:8000/alerts"),
+        fetch("http://localhost:8000/devices"),
       ]);
 
-      // Map devices to alerts
-      const deviceMap = devicesRes.data.reduce((acc, device) => {
-        acc[device.id] = device.name;
-        return acc;
-      }, {});
+      if (!alertsResponse.ok || !devicesResponse.ok) {
+        throw new Error("Failed to fetch data");
+      }
 
-      // Process alerts
-      const enrichedAlerts = alertsRes.data.map((alert) => ({
+      const alertsData = await alertsResponse.json();
+      const devicesData = await devicesResponse.json();
+
+      // Process alerts data
+      const processedAlerts = alertsData.map((alert) => ({
         ...alert,
-        device_name: deviceMap[alert.device_id] || "Unknown Device",
+        timestamp: new Date(alert.timestamp),
+        device_name:
+          devicesData.find((device) => device.id === alert.device_id)?.name ||
+          "Unknown Device",
+        alert_type: alert.type || "unknown",
       }));
 
-      setAlerts(enrichedAlerts);
-      setDevices(devicesRes.data);
+      setAlerts(processedAlerts);
+      setDevices(devicesData);
 
-      // Calculate statistics
+      // Calculate alert statistics
+      const alertStats = {
+        total: processedAlerts.length,
+        hardware: processedAlerts.filter((alert) => alert.type === "hardware")
+          .length,
+        software: processedAlerts.filter((alert) => alert.type === "software")
+          .length,
+        maintenance: processedAlerts.filter(
+          (alert) => alert.type === "maintenance"
+        ).length,
+      };
+      setAlertStats(alertStats);
+
+      // Process alert trends
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        date.setDate(date.getDate() - (6 - i));
+        return date;
+      });
+
+      const trendData = last7Days.map((date) => {
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
+
+        return {
+          date: date.toISOString().split("T")[0],
+          critical: processedAlerts.filter(
+            (alert) =>
+              alert.timestamp >= date &&
+              alert.timestamp < nextDay &&
+              alert.severity >= 7
+          ).length,
+          warning: processedAlerts.filter(
+            (alert) =>
+              alert.timestamp >= date &&
+              alert.timestamp < nextDay &&
+              alert.severity >= 4 &&
+              alert.severity < 7
+          ).length,
+          info: processedAlerts.filter(
+            (alert) =>
+              alert.timestamp >= date &&
+              alert.timestamp < nextDay &&
+              alert.severity < 4
+          ).length,
+        };
+      });
+
+      setAlertTrends(trendData);
+
+      // Update stats for the cards
       const newStats = {
-        critical: enrichedAlerts.filter(
-          (alert) => !alert.acknowledged && alert.severity >= 7
+        critical: processedAlerts.filter(
+          (a) => !a.acknowledged && a.severity >= 7
         ).length,
-        warning: enrichedAlerts.filter(
-          (alert) =>
-            !alert.acknowledged && alert.severity >= 4 && alert.severity < 7
+        warning: processedAlerts.filter(
+          (a) => !a.acknowledged && a.severity >= 4 && a.severity < 7
         ).length,
-        info: enrichedAlerts.filter(
-          (alert) => !alert.acknowledged && alert.severity < 4
-        ).length,
-        resolved: enrichedAlerts.filter((alert) => alert.acknowledged).length,
+        info: processedAlerts.filter((a) => !a.acknowledged && a.severity < 4)
+          .length,
+        resolved: processedAlerts.filter((a) => a.acknowledged).length,
       };
       setStats(newStats);
 
-      // Generate trend data
-      const trendData = generateTrendData(enrichedAlerts);
-      setAlertTrends(trendData);
-
       setError(null);
-    } catch (err) {
-      console.error("Error fetching alerts:", err);
-      setError("Failed to fetch alerts data");
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to fetch data. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -251,15 +307,45 @@ const Alerts = () => {
   };
 
   const getSeverityIcon = (severity) => {
-    if (severity >= 7) return <ErrorIcon color="error" />;
-    if (severity >= 4) return <WarningIcon color="warning" />;
-    return <InfoIcon color="info" />;
+    if (severity >= 7) return <ErrorIcon sx={{ color: "#dc3545" }} />;
+    return <WarningIcon sx={{ color: "#fd7e14" }} />;
   };
 
   const getSeverityColor = (severity) => {
     if (severity >= 7) return "error";
-    if (severity >= 4) return "warning";
-    return "info";
+    return "warning";
+  };
+
+  const getAlertTypeIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case "critical":
+        return <ErrorIcon color="error" />;
+      case "warning":
+        return <WarningIcon color="warning" />;
+      default:
+        return <InfoIcon color="info" />;
+    }
+  };
+
+  const getAlertTypeColor = (type) => {
+    switch (type?.toLowerCase()) {
+      case "critical":
+        return "error";
+      case "warning":
+        return "warning";
+      default:
+        return "info";
+    }
+  };
+
+  const getStatusLabel = (alert) => {
+    if (alert.acknowledged) return "Resolved";
+    return "Unresolved";
+  };
+
+  const getStatusColor = (alert) => {
+    if (alert.acknowledged) return "success";
+    return alert.severity >= 7 ? "error" : "warning";
   };
 
   const handleSort = (property) => {
@@ -275,20 +361,6 @@ const Alerts = () => {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
-
-  const getStatusColor = (alert) => {
-    if (alert.acknowledged) return "success";
-    if (alert.severity >= 7) return "error";
-    if (alert.severity >= 4) return "warning";
-    return "info";
-  };
-
-  const getStatusLabel = (alert) => {
-    if (alert.acknowledged) return "Resolved";
-    if (alert.severity >= 7) return "Critical";
-    if (alert.severity >= 4) return "Warning";
-    return "Info";
   };
 
   const filteredAlerts = alerts
@@ -358,13 +430,25 @@ const Alerts = () => {
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="timestamp"
-              tickFormatter={(value) => new Date(value).toLocaleDateString()}
+              dataKey="date"
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+              }}
             />
             <YAxis />
             <RechartsTooltip
               formatter={(value, name) => [value, name]}
-              labelFormatter={(label) => new Date(label).toLocaleDateString()}
+              labelFormatter={(label) =>
+                new Date(label).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })
+              }
             />
             <Legend />
             <Line
@@ -625,37 +709,54 @@ const Alerts = () => {
                 key={alert.id}
                 sx={{
                   bgcolor:
-                    alert.severity >= 7
-                      ? "error.lighter"
-                      : alert.severity >= 4
-                      ? "warning.lighter"
-                      : "inherit",
+                    alert.severity >= 7 ? "error.lighter" : "warning.lighter",
                 }}
               >
-                <TableCell>{getSeverityIcon(alert.severity)}</TableCell>
+                <TableCell>
+                  {alert.severity >= 7 ? (
+                    <ErrorIcon sx={{ color: "#dc3545" }} />
+                  ) : (
+                    <WarningIcon sx={{ color: "#fd7e14" }} />
+                  )}
+                </TableCell>
                 <TableCell>
                   {new Date(alert.timestamp).toLocaleString()}
                 </TableCell>
                 <TableCell>{alert.device_name}</TableCell>
                 <TableCell>
                   <Chip
-                    label={alert.alert_type}
-                    color={getSeverityColor(alert.severity)}
+                    icon={getAlertTypeIcon(alert.type)}
+                    label={
+                      alert.type
+                        ? alert.type.charAt(0).toUpperCase() +
+                          alert.type.slice(1)
+                        : "Unknown"
+                    }
+                    color={getAlertTypeColor(alert.type)}
                     size="small"
+                    sx={{
+                      backgroundColor:
+                        alert.type === "critical" ? "#dc3545" : "#fd7e14",
+                      color: "white",
+                    }}
                   />
                 </TableCell>
                 <TableCell>{alert.message}</TableCell>
                 <TableCell>
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Chip
-                      label={getStatusLabel(alert)}
-                      color={getStatusColor(alert)}
-                      size="small"
-                      icon={
-                        alert.acknowledged ? <CheckCircleIcon /> : undefined
-                      }
-                    />
-                  </Box>
+                  <Chip
+                    label={getStatusLabel(alert)}
+                    color={getStatusColor(alert)}
+                    size="small"
+                    icon={alert.acknowledged ? <CheckCircleIcon /> : undefined}
+                    sx={{
+                      backgroundColor: alert.acknowledged
+                        ? "#198754"
+                        : alert.severity >= 7
+                        ? "#dc3545"
+                        : "#fd7e14",
+                      color: "white",
+                    }}
+                  />
                 </TableCell>
                 <TableCell>
                   <Tooltip title="View Details">

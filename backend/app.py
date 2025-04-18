@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
-# from ml_model import PredictiveMaintenanceModel
+from typing import List, Optional, Dict, Any
+from ml_model import PredictiveMaintenanceModel
 import json
 import os
 import uuid
@@ -23,12 +23,14 @@ app.add_middleware(
 )
 
 # Initialize model
-# model = PredictiveMaintenanceModel()
-# model.load_model()
+model = PredictiveMaintenanceModel()
+model.load_model()
 
-# In-memory storage (replace with database in production)
+# Global variables to store mock data
 devices = {}
+sensor_history = {}
 alerts = []
+failures = []
 settings = {
     "thresholds": {
         "temperature": {"warning": 65, "critical": 75},
@@ -41,8 +43,33 @@ settings = {
     }
 }
 
-# Store historical sensor data
-sensor_history = {}
+def generate_mock_alerts():
+    """Generate mock alerts for testing"""
+    mock_alerts = []
+    messages = [
+        "Abnormal behavior detected in humidity sensor",
+        "Abnormal behavior detected in temperature sensor",
+        "Abnormal behavior detected in network interface",
+        "Abnormal behavior detected in power supply",
+        "Abnormal behavior detected in cooling system"
+    ]
+    
+    # Generate alerts for the past 7 days
+    for i in range(10):
+        severity = random.randint(1, 10)
+        device_id = f"device_{random.randint(1, 5)}"  # Ensure this matches with mock devices
+        
+        alert = {
+            "id": str(uuid.uuid4()),
+            "timestamp": (datetime.now() - timedelta(days=random.randint(0, 6))).isoformat(),
+            "device_id": device_id,
+            "type": "critical" if severity >= 7 else "warning",
+            "severity": severity,
+            "message": random.choice(messages),
+            "acknowledged": False  # All new alerts start as unresolved
+        }
+        mock_alerts.append(alert)
+    return mock_alerts
 
 def generate_sensor_history():
     for device_id, device in devices.items():
@@ -63,117 +90,119 @@ def generate_sensor_history():
             }
             sensor_history[device_id].append(reading)
 
-# Initialize mock data
+def generate_mock_failures():
+    global failures
+    components = ["CPU", "Memory", "Storage", "Power Supply", "Network Card", "Cooling Fan"]
+    descriptions = [
+        "High temperature detected",
+        "Memory usage exceeding threshold",
+        "Disk space critically low",
+        "Power fluctuations detected",
+        "Network connectivity issues",
+        "Cooling system malfunction"
+    ]
+    technicians = ["John Smith", "Alice Johnson", "Bob Wilson", None]
+    statuses = ["open", "in_progress", "resolved"]
+    
+    # Clear existing failures
+    failures.clear()
+    
+    for _ in range(20):  # Generate more failures for better data
+        status = random.choice(statuses)
+        failure = {
+            "id": str(uuid.uuid4()),
+            "type": random.choice(["hardware", "software"]),
+            "device_id": f"DEV{random.randint(1, 5):03d}",
+            "component": random.choice(components),
+            "severity": random.choice(["low", "medium", "high", "critical"]),
+            "description": random.choice(descriptions),
+            "timestamp": (datetime.now() - timedelta(days=random.randint(0, 7))).isoformat(),
+            "status": status,
+            "resolution_time": random.uniform(1, 24) if status == "resolved" else None,
+            "technician": random.choice(technicians) if status != "open" else None,
+            "resolution_notes": "Issue resolved by replacing component" if status == "resolved" else None
+        }
+        failures.append(failure)
+
 def init_mock_data():
-    # Add mock devices for banking infrastructure
-    mock_devices = [
-        {
-            "id": "atm_001",
-            "name": "ATM - Main Branch",
-            "location": "Main Branch, Downtown",
-            "type": "ATM",
-            "status": "healthy",
+    """Initialize mock data for the application"""
+    global devices, alerts, sensor_history, failures
+    
+    # Initialize mock devices
+    devices = {
+        "device_1": {
+            "id": "device_1",
+            "name": "Server Room AC",
+            "location": "Server Room",
+            "type": "HVAC",
+            "status": "operational",
             "last_check": datetime.now(),
             "sensors": {
-                "temperature": 35.5,
+                "temperature": 22.5,
                 "humidity": 45.0,
-                "vibration": 1.5
+                "power": 5.2
             }
         },
-        {
-            "id": "server_001",
-            "name": "Core Banking Server",
-            "location": "Data Center 1",
-            "type": "Server",
-            "status": "healthy",
+        "device_2": {
+            "id": "device_2",
+            "name": "Main Power Unit",
+            "location": "Electrical Room",
+            "type": "Power",
+            "status": "operational",
             "last_check": datetime.now(),
             "sensors": {
-                "temperature": 42.0,
-                "humidity": 50.0,
-                "vibration": 0.8
+                "voltage": 220.0,
+                "current": 15.0,
+                "temperature": 35.0
             }
         },
-        {
-            "id": "ups_001",
-            "name": "UPS System - Main",
-            "location": "Data Center 1",
-            "type": "Power System",
-            "status": "warning",
-            "last_check": datetime.now(),
-            "sensors": {
-                "temperature": 68.0,
-                "humidity": 65.0,
-                "vibration": 4.2
-            }
-        },
-        {
-            "id": "ac_001",
-            "name": "HVAC Unit 1",
-            "location": "Server Room A",
-            "type": "Climate Control",
-            "status": "healthy",
-            "last_check": datetime.now(),
-            "sensors": {
-                "temperature": 22.0,
-                "humidity": 55.0,
-                "vibration": 2.1
-            }
-        },
-        {
-            "id": "network_001",
-            "name": "Core Network Switch",
-            "location": "Network Operations Center",
+        "device_3": {
+            "id": "device_3",
+            "name": "Network Switch",
+            "location": "Server Room",
             "type": "Network",
-            "status": "healthy",
+            "status": "operational",
             "last_check": datetime.now(),
             "sensors": {
-                "temperature": 45.5,
-                "humidity": 48.0,
-                "vibration": 0.5
+                "temperature": 28.0,
+                "packet_loss": 0.1,
+                "bandwidth": 850.0
+            }
+        },
+        "device_4": {
+            "id": "device_4",
+            "name": "Backup Generator",
+            "location": "Outside",
+            "type": "Power",
+            "status": "standby",
+            "last_check": datetime.now(),
+            "sensors": {
+                "fuel_level": 95.0,
+                "temperature": 30.0,
+                "oil_pressure": 40.0
+            }
+        },
+        "device_5": {
+            "id": "device_5",
+            "name": "Storage Array",
+            "location": "Server Room",
+            "type": "Storage",
+            "status": "operational",
+            "last_check": datetime.now(),
+            "sensors": {
+                "temperature": 25.0,
+                "disk_usage": 68.0,
+                "read_latency": 2.5
             }
         }
-    ]
+    }
     
-    for device in mock_devices:
-        devices[device["id"]] = device
-    
-    # Add mock alerts
-    mock_alerts = [
-        {
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now().isoformat(),
-            "device_id": "ups_001",
-            "alert_type": "HIGH_TEMPERATURE",
-            "severity": 7,
-            "message": "UPS temperature approaching critical threshold",
-            "details": {
-                "temperature": 68.0,
-                "threshold": 65.0
-            },
-            "acknowledged": False
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "timestamp": datetime.now().isoformat(),
-            "device_id": "server_001",
-            "alert_type": "PERFORMANCE_WARNING",
-            "severity": 4,
-            "message": "Server performance metrics showing unusual patterns",
-            "details": {
-                "load": 85.5,
-                "threshold": 80.0
-            },
-            "acknowledged": False
-        }
-    ]
-    
-    alerts.extend(mock_alerts)
+    alerts = generate_mock_alerts()
+    sensor_history = generate_sensor_history()
+    failures = generate_mock_failures()
 
-# Initialize mock data on startup
+# Initialize mock data when the server starts
 init_mock_data()
-
-# Generate initial sensor history
-generate_sensor_history()
 
 class Device(BaseModel):
     id: str
@@ -248,40 +277,6 @@ class FailureStats(BaseModel):
     component_distribution: Dict[str, int]
     device_distribution: Dict[str, int]
 
-# Mock failures data
-failures = []
-
-def generate_mock_failures():
-    components = ["CPU", "Memory", "Storage", "Power Supply", "Network Card", "Cooling Fan"]
-    descriptions = [
-        "High temperature detected",
-        "Memory usage exceeding threshold",
-        "Disk space critically low",
-        "Power fluctuations detected",
-        "Network connectivity issues",
-        "Cooling system malfunction"
-    ]
-    technicians = ["John Smith", "Alice Johnson", "Bob Wilson", None]
-    
-    for _ in range(10):
-        failure = {
-            "id": str(uuid.uuid4()),
-            "type": random.choice(["hardware", "software"]),
-            "device_id": random.choice(list(devices.keys())),
-            "component": random.choice(components),
-            "severity": random.choice(["low", "medium", "high", "critical"]),
-            "description": random.choice(descriptions),
-            "timestamp": (datetime.now() - timedelta(days=random.randint(0, 7))).isoformat(),
-            "status": random.choice(["open", "in_progress", "resolved"]),
-            "resolution_time": random.uniform(1, 24) if random.random() > 0.3 else None,
-            "technician": random.choice(technicians),
-            "resolution_notes": "Issue resolved by replacing component" if random.random() > 0.5 else None
-        }
-        failures.append(failure)
-
-# Generate initial mock failures
-generate_mock_failures()
-
 @app.get("/")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
@@ -315,12 +310,10 @@ async def create_device(device: Device):
 async def get_alerts(severity: Optional[str] = None, device_id: Optional[str] = None):
     filtered_alerts = alerts
     if severity:
-        if severity == "high":
-            filtered_alerts = [a for a in alerts if a["severity"] > 7]
-        elif severity == "medium":
-            filtered_alerts = [a for a in alerts if 4 < a["severity"] <= 7]
-        elif severity == "low":
-            filtered_alerts = [a for a in alerts if a["severity"] <= 4]
+        if severity.lower() == "critical":
+            filtered_alerts = [a for a in alerts if a["type"] == "critical"]
+        elif severity.lower() == "warning":
+            filtered_alerts = [a for a in alerts if a["type"] == "warning"]
     if device_id:
         filtered_alerts = [a for a in filtered_alerts if a["device_id"] == device_id]
     return filtered_alerts
@@ -333,7 +326,7 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
         log_df = pd.DataFrame(request.log_data)
         
         # Make predictions
-        # predictions = model.predict(sensor_df, log_df)
+        predictions = model.predict(sensor_df, log_df)
         
         # Generate alerts
         new_alerts = []
@@ -491,6 +484,30 @@ async def get_failure_timeline():
             "critical": len([f for f in day_failures if f["severity"] == "critical"])
         })
     return timeline
+
+@app.get("/alert-trends")
+async def get_alert_trends():
+    # Group alerts by date and type
+    trends = []
+    for i in range(7):
+        date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_alerts = [a for a in alerts if a["timestamp"].startswith(date)]
+        
+        trends.append({
+            "date": date,
+            "Critical Alerts": len([a for a in day_alerts if a["type"] == "critical"]),
+            "Warning Alerts": len([a for a in day_alerts if a["type"] == "warning"]),
+            "Info Alerts": 0  # We don't have info alerts in our system
+        })
+    return trends
+
+@app.get("/maintenance-costs")
+async def get_maintenance_costs():
+    return {
+        "preventive": 250,
+        "corrective": 500,
+        "total": 750
+    }
 
 if __name__ == "__main__":
     import uvicorn
