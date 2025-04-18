@@ -18,6 +18,8 @@ import {
   DevicesOther as DeviceIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
+  BugReport as FailureIcon,
+  Info as InfoIcon,
 } from "@mui/icons-material";
 
 const drawerWidth = 240;
@@ -29,7 +31,13 @@ const Layout = ({ children }) => {
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Device Status", icon: <DeviceIcon />, path: "/device-status" },
     { text: "Alerts", icon: <AlertIcon />, path: "/alerts" },
+    {
+      text: "Failure Analysis",
+      icon: <FailureIcon />,
+      path: "/failure-analysis",
+    },
     { text: "Reports", icon: <ReportIcon />, path: "/reports" },
+    { text: "Why Choose Us", icon: <InfoIcon />, path: "/why-choose-us" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
 

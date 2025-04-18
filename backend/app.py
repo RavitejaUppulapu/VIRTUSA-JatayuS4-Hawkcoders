@@ -4,11 +4,12 @@ from pydantic import BaseModel
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict
-from ml_model import PredictiveMaintenanceModel
+# from ml_model import PredictiveMaintenanceModel
 import json
 import os
 import uuid
 import random
+from enum import Enum
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -22,8 +23,8 @@ app.add_middleware(
 )
 
 # Initialize model
-model = PredictiveMaintenanceModel()
-model.load_model()
+# model = PredictiveMaintenanceModel()
+# model.load_model()
 
 # In-memory storage (replace with database in production)
 devices = {}
@@ -213,6 +214,74 @@ class Settings(BaseModel):
 class ChatMessage(BaseModel):
     message: str
 
+class FailureType(str, Enum):
+    HARDWARE = "hardware"
+    SOFTWARE = "software"
+
+class FailureSeverity(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class Failure(BaseModel):
+    id: str
+    type: FailureType
+    device_id: str
+    component: str
+    severity: FailureSeverity
+    description: str
+    timestamp: datetime
+    status: str
+    resolution_time: Optional[float] = None
+    technician: Optional[str] = None
+    resolution_notes: Optional[str] = None
+
+class FailureStats(BaseModel):
+    total_failures: int
+    hardware_failures: int
+    software_failures: int
+    critical_failures: int
+    warning_failures: int
+    resolved_failures: int
+    avg_resolution_time: float
+    component_distribution: Dict[str, int]
+    device_distribution: Dict[str, int]
+
+# Mock failures data
+failures = []
+
+def generate_mock_failures():
+    components = ["CPU", "Memory", "Storage", "Power Supply", "Network Card", "Cooling Fan"]
+    descriptions = [
+        "High temperature detected",
+        "Memory usage exceeding threshold",
+        "Disk space critically low",
+        "Power fluctuations detected",
+        "Network connectivity issues",
+        "Cooling system malfunction"
+    ]
+    technicians = ["John Smith", "Alice Johnson", "Bob Wilson", None]
+    
+    for _ in range(10):
+        failure = {
+            "id": str(uuid.uuid4()),
+            "type": random.choice(["hardware", "software"]),
+            "device_id": random.choice(list(devices.keys())),
+            "component": random.choice(components),
+            "severity": random.choice(["low", "medium", "high", "critical"]),
+            "description": random.choice(descriptions),
+            "timestamp": (datetime.now() - timedelta(days=random.randint(0, 7))).isoformat(),
+            "status": random.choice(["open", "in_progress", "resolved"]),
+            "resolution_time": random.uniform(1, 24) if random.random() > 0.3 else None,
+            "technician": random.choice(technicians),
+            "resolution_notes": "Issue resolved by replacing component" if random.random() > 0.5 else None
+        }
+        failures.append(failure)
+
+# Generate initial mock failures
+generate_mock_failures()
+
 @app.get("/")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
@@ -264,7 +333,7 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
         log_df = pd.DataFrame(request.log_data)
         
         # Make predictions
-        predictions = model.predict(sensor_df, log_df)
+        # predictions = model.predict(sensor_df, log_df)
         
         # Generate alerts
         new_alerts = []
@@ -371,6 +440,57 @@ def get_mock_ai_response(message: str) -> str:
     
     else:
         return "I'm here to help with maintenance and monitoring. You can ask about:\n- Device issues (temperature, humidity, vibration)\n- Maintenance procedures\n- Alert management\n- Best practices\n\nWhat would you like to know?"
+
+@app.get("/failures")
+async def get_failures(type: Optional[str] = None):
+    filtered_failures = failures
+    if type:
+        filtered_failures = [f for f in failures if f["type"] == type]
+    return filtered_failures
+
+@app.get("/failure-stats")
+async def get_failure_stats():
+    total = len(failures)
+    hardware = len([f for f in failures if f["type"] == "hardware"])
+    software = len([f for f in failures if f["type"] == "software"])
+    critical = len([f for f in failures if f["severity"] == "critical"])
+    warning = len([f for f in failures if f["severity"] in ["high", "medium"]])
+    resolved = len([f for f in failures if f["status"] == "resolved"])
+    
+    # Calculate average resolution time for resolved failures
+    resolution_times = [f["resolution_time"] for f in failures if f["resolution_time"] is not None]
+    avg_resolution_time = sum(resolution_times) / len(resolution_times) if resolution_times else 0
+    
+    # Calculate component distribution
+    component_dist = {}
+    for f in failures:
+        component = f["component"]
+        component_dist[component] = component_dist.get(component, 0) + 1
+    
+    return {
+        "total_failures": total,
+        "hardware_failures": hardware,
+        "software_failures": software,
+        "critical_failures": critical,
+        "warning_failures": warning,
+        "resolved_failures": resolved,
+        "avg_resolution_time": avg_resolution_time,
+        "component_distribution": component_dist
+    }
+
+@app.get("/failure-timeline")
+async def get_failure_timeline():
+    # Group failures by date
+    timeline = []
+    for i in range(7):
+        date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        day_failures = [f for f in failures if f["timestamp"].startswith(date)]
+        timeline.append({
+            "date": date,
+            "total": len(day_failures),
+            "critical": len([f for f in day_failures if f["severity"] == "critical"])
+        })
+    return timeline
 
 if __name__ == "__main__":
     import uvicorn
