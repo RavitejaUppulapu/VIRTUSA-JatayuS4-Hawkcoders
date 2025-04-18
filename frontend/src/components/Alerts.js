@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -16,146 +16,514 @@ import {
   Select,
   MenuItem,
   Grid,
-  Card,
-  CardContent,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  CircularProgress,
+  Alert,
+  Tabs,
+  Tab,
+  TextField,
+  TablePagination,
+  TableSortLabel,
+  InputAdornment,
+  Tooltip,
+  Snackbar,
+  Divider,
+  Card,
+  CardContent,
 } from "@mui/material";
 import {
-  CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
   Visibility as VisibilityIcon,
+  Done as DoneIcon,
+  Search as SearchIcon,
+  CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import axios from "axios";
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [devices, setDevices] = useState([]);
   const [selectedAlert, setSelectedAlert] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [orderBy, setOrderBy] = useState("timestamp");
+  const [order, setOrder] = useState("desc");
+  const [alertTrends, setAlertTrends] = useState([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [alertsRes, devicesRes] = await Promise.all([
-          axios.get("http://localhost:8000/alerts"),
-          axios.get("http://localhost:8000/devices"),
-        ]);
-        setAlerts(alertsRes.data);
-        setDevices(devicesRes.data);
-      } catch (err) {
-        console.error("Error fetching alerts:", err);
-      }
-    };
+  const [stats, setStats] = useState({
+    critical: 0,
+    warning: 0,
+    info: 0,
+    resolved: 0,
+  });
 
-    fetchData();
-    // Refresh alerts every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [alertsRes, devicesRes] = await Promise.all([
+        axios.get("http://localhost:8000/alerts"),
+        axios.get("http://localhost:8000/devices"),
+      ]);
+
+      // Map devices to alerts
+      const deviceMap = devicesRes.data.reduce((acc, device) => {
+        acc[device.id] = device.name;
+        return acc;
+      }, {});
+
+      // Process alerts
+      const enrichedAlerts = alertsRes.data.map((alert) => ({
+        ...alert,
+        device_name: deviceMap[alert.device_id] || "Unknown Device",
+      }));
+
+      setAlerts(enrichedAlerts);
+      setDevices(devicesRes.data);
+
+      // Calculate statistics
+      const newStats = {
+        critical: enrichedAlerts.filter(
+          (alert) => !alert.acknowledged && alert.severity >= 7
+        ).length,
+        warning: enrichedAlerts.filter(
+          (alert) =>
+            !alert.acknowledged && alert.severity >= 4 && alert.severity < 7
+        ).length,
+        info: enrichedAlerts.filter(
+          (alert) => !alert.acknowledged && alert.severity < 4
+        ).length,
+        resolved: enrichedAlerts.filter((alert) => alert.acknowledged).length,
+      };
+      setStats(newStats);
+
+      // Generate trend data
+      const trendData = generateTrendData(enrichedAlerts);
+      setAlertTrends(trendData);
+
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching alerts:", err);
+      setError("Failed to fetch alerts data");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleAcknowledge = async (alertId) => {
-    try {
-      await axios.post(`http://localhost:8000/alerts/${alertId}/acknowledge`);
-      setAlerts(
-        alerts.map((alert) =>
-          alert.id === alertId ? { ...alert, acknowledged: true } : alert
-        )
-      );
-    } catch (err) {
-      console.error("Error acknowledging alert:", err);
-    }
-  };
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-  const getSeverityIcon = (severity) => {
-    if (severity > 7) return <ErrorIcon color="error" />;
-    if (severity > 4) return <WarningIcon color="warning" />;
-    return <InfoIcon color="info" />;
-  };
+  const generateTrendData = (currentAlerts) => {
+    const now = new Date();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(now);
+      date.setDate(date.getDate() - (6 - i));
+      return date.toISOString().split("T")[0];
+    });
 
-  const getSeverityLabel = (severity) => {
-    if (severity > 7) return "Critical";
-    if (severity > 4) return "Warning";
-    return "Info";
-  };
+    return days.map((day) => {
+      const dayStart = new Date(day);
+      const dayEnd = new Date(day);
+      dayEnd.setDate(dayEnd.getDate() + 1);
 
-  const getSeverityColor = (severity) => {
-    if (severity > 7) return "error";
-    if (severity > 4) return "warning";
-    return "info";
+      return {
+        timestamp: day,
+        critical: currentAlerts.filter(
+          (a) =>
+            new Date(a.timestamp) >= dayStart &&
+            new Date(a.timestamp) < dayEnd &&
+            a.severity >= 7
+        ).length,
+        warning: currentAlerts.filter(
+          (a) =>
+            new Date(a.timestamp) >= dayStart &&
+            new Date(a.timestamp) < dayEnd &&
+            a.severity >= 4 &&
+            a.severity < 7
+        ).length,
+        info: currentAlerts.filter(
+          (a) =>
+            new Date(a.timestamp) >= dayStart &&
+            new Date(a.timestamp) < dayEnd &&
+            a.severity < 4
+        ).length,
+      };
+    });
   };
-
-  const filteredAlerts = alerts.filter((alert) => {
-    if (selectedSeverity !== "all") {
-      const severityLevel = getSeverityLabel(alert.severity).toLowerCase();
-      if (severityLevel !== selectedSeverity.toLowerCase()) return false;
-    }
-    if (selectedDevice !== "all" && alert.device_id !== selectedDevice)
-      return false;
-    return true;
-  });
 
   const handleViewDetails = (alert) => {
     setSelectedAlert(alert);
+    setResolutionNotes("");
     setOpenDialog(true);
   };
 
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedAlert(null);
+    setResolutionNotes("");
+  };
+
+  const handleAcknowledge = async () => {
+    try {
+      await axios.post(
+        `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
+        {
+          acknowledged: true,
+          notes: resolutionNotes,
+          resolution_timestamp: new Date().toISOString(),
+        }
+      );
+
+      // Update alerts state
+      const updatedAlerts = alerts.map((alert) =>
+        alert.id === selectedAlert.id
+          ? {
+              ...alert,
+              acknowledged: true,
+              notes: resolutionNotes,
+              resolution_timestamp: new Date().toISOString(),
+              status: "resolved",
+            }
+          : alert
+      );
+      setAlerts(updatedAlerts);
+
+      // Update statistics
+      setStats((prevStats) => ({
+        ...prevStats,
+        resolved: prevStats.resolved + 1,
+        [getAlertSeverityCategory(selectedAlert.severity)]:
+          prevStats[getAlertSeverityCategory(selectedAlert.severity)] - 1,
+      }));
+
+      // Update trend data
+      const newTrendData = generateTrendData(updatedAlerts);
+      setAlertTrends(newTrendData);
+
+      // Show success message
+      setSuccessMessage("Alert successfully resolved");
+
+      // Reset UI state
+      handleCloseDialog();
+      setError(null);
+    } catch (err) {
+      console.error("Error acknowledging alert:", err);
+      setError(
+        "Failed to acknowledge alert: " +
+          (err.response?.data?.detail || err.message)
+      );
+    }
+  };
+
+  // Helper function to determine severity category
+  const getAlertSeverityCategory = (severity) => {
+    if (severity >= 7) return "critical";
+    if (severity >= 4) return "warning";
+    return "info";
+  };
+
+  const getSeverityIcon = (severity) => {
+    if (severity >= 7) return <ErrorIcon color="error" />;
+    if (severity >= 4) return <WarningIcon color="warning" />;
+    return <InfoIcon color="info" />;
+  };
+
+  const getSeverityColor = (severity) => {
+    if (severity >= 7) return "error";
+    if (severity >= 4) return "warning";
+    return "info";
+  };
+
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const getStatusColor = (alert) => {
+    if (alert.acknowledged) return "success";
+    if (alert.severity >= 7) return "error";
+    if (alert.severity >= 4) return "warning";
+    return "info";
+  };
+
+  const getStatusLabel = (alert) => {
+    if (alert.acknowledged) return "Resolved";
+    if (alert.severity >= 7) return "Critical";
+    if (alert.severity >= 4) return "Warning";
+    return "Info";
+  };
+
+  const filteredAlerts = alerts
+    .filter((alert) => {
+      if (selectedTab === 0 && alert.acknowledged) return false;
+      if (selectedTab === 1 && !alert.acknowledged) return false;
+
+      if (selectedSeverity !== "all") {
+        const severity = parseInt(selectedSeverity);
+        if (severity === 7 && alert.severity < 7) return false;
+        if (severity === 4 && (alert.severity < 4 || alert.severity >= 7))
+          return false;
+        if (severity === 1 && alert.severity >= 4) return false;
+      }
+
+      if (selectedDevice !== "all" && alert.device_id !== selectedDevice)
+        return false;
+
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          alert.message.toLowerCase().includes(query) ||
+          alert.device_name.toLowerCase().includes(query) ||
+          alert.alert_type.toLowerCase().includes(query)
+        );
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const isAsc = order === "asc";
+      switch (orderBy) {
+        case "severity":
+          return isAsc ? a.severity - b.severity : b.severity - a.severity;
+        case "timestamp":
+          return isAsc
+            ? new Date(a.timestamp) - new Date(b.timestamp)
+            : new Date(b.timestamp) - new Date(a.timestamp);
+        case "device_name":
+          return isAsc
+            ? a.device_name.localeCompare(b.device_name)
+            : b.device_name.localeCompare(a.device_name);
+        case "alert_type":
+          return isAsc
+            ? a.alert_type.localeCompare(b.alert_type)
+            : b.alert_type.localeCompare(a.alert_type);
+        default:
+          return 0;
+      }
+    });
+
+  const paginatedAlerts = filteredAlerts.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const renderAlertTrends = () => {
+    return (
+      <Paper sx={{ p: 2, mb: 3, height: "400px" }}>
+        <Typography variant="h6" gutterBottom>
+          Alert Trends
+        </Typography>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart
+            data={alertTrends}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(value) => new Date(value).toLocaleDateString()}
+            />
+            <YAxis />
+            <RechartsTooltip
+              formatter={(value, name) => [value, name]}
+              labelFormatter={(label) => new Date(label).toLocaleDateString()}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="critical"
+              stroke="#f44336"
+              name="Critical"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="warning"
+              stroke="#ff9800"
+              name="Warning"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="info"
+              stroke="#2196f3"
+              name="Info"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Paper>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box p={3}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ maxWidth: "1400px", margin: "0 auto", p: { xs: 1, sm: 2 } }}>
+      <Typography variant="h5" gutterBottom>
         Alert Management System
       </Typography>
 
-      {/* Alert Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
-          <Card>
+      {/* Alert Statistics */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={3}>
+          <Card
+            sx={{ bgcolor: "#ffebee", border: 1, borderColor: "error.main" }}
+          >
             <CardContent>
-              <Typography color="error" variant="h6">
-                Critical Alerts
-              </Typography>
-              <Typography variant="h4">
-                {alerts.filter((a) => a.severity > 7).length}
-              </Typography>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="h6" color="error">
+                  Critical Alerts
+                </Typography>
+                <ErrorIcon color="error" />
+              </Box>
+              <Typography variant="h3">{stats.critical}</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
+        <Grid item xs={12} sm={3}>
+          <Card
+            sx={{ bgcolor: "#fff3e0", border: 1, borderColor: "warning.main" }}
+          >
             <CardContent>
-              <Typography color="warning" variant="h6">
-                Warning Alerts
-              </Typography>
-              <Typography variant="h4">
-                {alerts.filter((a) => a.severity > 4 && a.severity <= 7).length}
-              </Typography>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="h6" color="warning.dark">
+                  Warning Alerts
+                </Typography>
+                <WarningIcon color="warning" />
+              </Box>
+              <Typography variant="h3">{stats.warning}</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
+        <Grid item xs={12} sm={3}>
+          <Card
+            sx={{ bgcolor: "#e3f2fd", border: 1, borderColor: "info.main" }}
+          >
             <CardContent>
-              <Typography color="info" variant="h6">
-                Info Alerts
-              </Typography>
-              <Typography variant="h4">
-                {alerts.filter((a) => a.severity <= 4).length}
-              </Typography>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="h6" color="info.dark">
+                  Info Alerts
+                </Typography>
+                <InfoIcon color="info" />
+              </Box>
+              <Typography variant="h3">{stats.info}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <Card
+            sx={{ bgcolor: "#e8f5e9", border: 1, borderColor: "success.main" }}
+          >
+            <CardContent>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="h6" color="success.dark">
+                  Resolved Alerts
+                </Typography>
+                <CheckCircleIcon color="success" />
+              </Box>
+              <Typography variant="h3">{stats.resolved}</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={6}>
+      {/* Alert Trends Chart */}
+      {renderAlertTrends()}
+
+      {/* Tabs and Filters */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} md={4}>
+          <Tabs
+            value={selectedTab}
+            onChange={(e, newValue) => setSelectedTab(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+          >
+            <Tab label="Active Alerts" />
+            <Tab label="Resolved Alerts" />
+          </Tabs>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
           <FormControl fullWidth>
             <InputLabel>Severity</InputLabel>
             <Select
@@ -164,13 +532,13 @@ const Alerts = () => {
               onChange={(e) => setSelectedSeverity(e.target.value)}
             >
               <MenuItem value="all">All Severities</MenuItem>
-              <MenuItem value="critical">Critical</MenuItem>
-              <MenuItem value="warning">Warning</MenuItem>
-              <MenuItem value="info">Info</MenuItem>
+              <MenuItem value="7">Critical</MenuItem>
+              <MenuItem value="4">Warning</MenuItem>
+              <MenuItem value="1">Info</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} sm={6} md={4}>
           <FormControl fullWidth>
             <InputLabel>Device</InputLabel>
             <Select
@@ -187,6 +555,22 @@ const Alerts = () => {
             </Select>
           </FormControl>
         </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search alerts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
       </Grid>
 
       {/* Alerts Table */}
@@ -194,146 +578,270 @@ const Alerts = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Severity</TableCell>
-              <TableCell>Timestamp</TableCell>
-              <TableCell>Device</TableCell>
-              <TableCell>Alert Type</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "severity"}
+                  direction={orderBy === "severity" ? order : "asc"}
+                  onClick={() => handleSort("severity")}
+                >
+                  Severity
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "timestamp"}
+                  direction={orderBy === "timestamp" ? order : "desc"}
+                  onClick={() => handleSort("timestamp")}
+                >
+                  Timestamp
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "device_name"}
+                  direction={orderBy === "device_name" ? order : "asc"}
+                  onClick={() => handleSort("device_name")}
+                >
+                  Device
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "alert_type"}
+                  direction={orderBy === "alert_type" ? order : "asc"}
+                  onClick={() => handleSort("alert_type")}
+                >
+                  Alert Type
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Message</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAlerts.map((alert) => (
-              <TableRow key={alert.id}>
-                <TableCell>
-                  {getSeverityIcon(alert.severity)}
-                  <Chip
-                    label={getSeverityLabel(alert.severity)}
-                    color={getSeverityColor(alert.severity)}
-                    size="small"
-                    sx={{ ml: 1 }}
-                  />
-                </TableCell>
+            {paginatedAlerts.map((alert) => (
+              <TableRow
+                key={alert.id}
+                sx={{
+                  bgcolor:
+                    alert.severity >= 7
+                      ? "error.lighter"
+                      : alert.severity >= 4
+                      ? "warning.lighter"
+                      : "inherit",
+                }}
+              >
+                <TableCell>{getSeverityIcon(alert.severity)}</TableCell>
                 <TableCell>
                   {new Date(alert.timestamp).toLocaleString()}
                 </TableCell>
-                <TableCell>
-                  {devices.find((d) => d.id === alert.device_id)?.name ||
-                    alert.device_id}
-                </TableCell>
-                <TableCell>{alert.alert_type}</TableCell>
-                <TableCell>{alert.message}</TableCell>
+                <TableCell>{alert.device_name}</TableCell>
                 <TableCell>
                   <Chip
-                    label={alert.acknowledged ? "Acknowledged" : "New"}
-                    color={alert.acknowledged ? "success" : "warning"}
+                    label={alert.alert_type}
+                    color={getSeverityColor(alert.severity)}
                     size="small"
                   />
                 </TableCell>
+                <TableCell>{alert.message}</TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleViewDetails(alert)}
-                    title="View Details"
-                  >
-                    <VisibilityIcon />
-                  </IconButton>
-                  {!alert.acknowledged && (
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Chip
+                      label={getStatusLabel(alert)}
+                      color={getStatusColor(alert)}
+                      size="small"
+                      icon={
+                        alert.acknowledged ? <CheckCircleIcon /> : undefined
+                      }
+                    />
+                  </Box>
+                </TableCell>
+                <TableCell>
+                  <Tooltip title="View Details">
                     <IconButton
                       size="small"
-                      onClick={() => handleAcknowledge(alert.id)}
-                      title="Acknowledge"
+                      onClick={() => handleViewDetails(alert)}
+                      color="primary"
                     >
-                      <CheckCircleIcon />
+                      <VisibilityIcon />
                     </IconButton>
+                  </Tooltip>
+                  {!alert.acknowledged && (
+                    <Tooltip title="Acknowledge">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewDetails(alert)}
+                        color="success"
+                      >
+                        <DoneIcon />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredAlerts.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </TableContainer>
 
       {/* Alert Details Dialog */}
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Alert Details</DialogTitle>
+        <DialogTitle
+          sx={{
+            bgcolor: selectedAlert?.acknowledged
+              ? "success.light"
+              : "primary.main",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          {selectedAlert?.acknowledged && <CheckCircleIcon />}
+          {selectedAlert?.acknowledged
+            ? "Resolved Alert Details"
+            : "Alert Details & Resolution"}
+        </DialogTitle>
         <DialogContent>
           {selectedAlert && (
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {selectedAlert.message}
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">Device</Typography>
-                  <Typography gutterBottom>
-                    {devices.find((d) => d.id === selectedAlert.device_id)
-                      ?.name || selectedAlert.device_id}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">Alert Type</Typography>
-                  <Typography gutterBottom>
-                    {selectedAlert.alert_type}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">Severity</Typography>
-                  <Typography gutterBottom>
-                    <Chip
-                      label={`${getSeverityLabel(selectedAlert.severity)} (${
-                        selectedAlert.severity
-                      }/10)`}
-                      color={getSeverityColor(selectedAlert.severity)}
-                      size="small"
-                    />
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2">Status</Typography>
-                  <Typography gutterBottom>
-                    <Chip
-                      label={
-                        selectedAlert.acknowledged ? "Acknowledged" : "New"
-                      }
-                      color={selectedAlert.acknowledged ? "success" : "warning"}
-                      size="small"
-                    />
-                  </Typography>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Details</Typography>
-                  <Paper sx={{ p: 2, bgcolor: "grey.100" }}>
-                    <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                      {JSON.stringify(selectedAlert.details, null, 2)}
-                    </pre>
-                  </Paper>
-                </Grid>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Device
+                </Typography>
+                <Typography variant="body1">
+                  {selectedAlert.device_name}
+                </Typography>
               </Grid>
-            </Box>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Alert Type
+                </Typography>
+                <Chip
+                  label={selectedAlert.alert_type}
+                  color={getSeverityColor(selectedAlert.severity)}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Message
+                </Typography>
+                <Typography variant="body1">{selectedAlert.message}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Created At
+                </Typography>
+                <Typography variant="body1">
+                  {new Date(selectedAlert.timestamp).toLocaleString()}
+                </Typography>
+              </Grid>
+
+              {selectedAlert.acknowledged ? (
+                <>
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography
+                      variant="subtitle1"
+                      color="success.main"
+                      gutterBottom
+                    >
+                      Resolution Details
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Resolution Time
+                    </Typography>
+                    <Typography variant="body1">
+                      {new Date(
+                        selectedAlert.resolution_timestamp
+                      ).toLocaleString()}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Resolution Notes
+                    </Typography>
+                    <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
+                      <Typography variant="body1">
+                        {selectedAlert.notes || "No notes provided"}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                </>
+              ) : (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Resolution Notes
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={resolutionNotes}
+                    onChange={(e) => setResolutionNotes(e.target.value)}
+                    placeholder="Enter resolution notes..."
+                    required
+                    error={!resolutionNotes.trim()}
+                    helperText={
+                      !resolutionNotes.trim()
+                        ? "Resolution notes are required"
+                        : ""
+                    }
+                  />
+                </Grid>
+              )}
+            </Grid>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={handleCloseDialog}>Close</Button>
           {selectedAlert && !selectedAlert.acknowledged && (
             <Button
-              onClick={() => {
-                handleAcknowledge(selectedAlert.id);
-                setOpenDialog(false);
-              }}
-              color="primary"
+              onClick={handleAcknowledge}
+              color="success"
+              variant="contained"
+              disabled={!resolutionNotes.trim()}
+              startIcon={<DoneIcon />}
             >
-              Acknowledge
+              Acknowledge & Resolve
             </Button>
           )}
-          <Button onClick={() => setOpenDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success Message Snackbar */}
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={6000}
+        onClose={() => setSuccessMessage("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage("")}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
