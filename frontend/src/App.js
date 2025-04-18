@@ -1,25 +1,6 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
-  Divider,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  CssBaseline,
-} from "@mui/material";
-import {
-  Dashboard as DashboardIcon,
-  Warning as AlertIcon,
-  DevicesOther as DeviceIcon,
-  Assessment as ReportIcon,
-  Settings as SettingsIcon,
-} from "@mui/icons-material";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { CssBaseline } from "@mui/material";
 import Dashboard from "./components/Dashboard";
 import Alerts from "./components/Alerts";
 import DeviceStatus from "./components/DeviceStatus";
@@ -29,8 +10,6 @@ import Layout from "./components/Layout";
 import AIChat from "./components/AIChat";
 import "./App.css";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-
-const drawerWidth = 240;
 
 // Create a custom theme with improved colors
 const theme = createTheme({
@@ -105,14 +84,6 @@ const theme = createTheme({
 });
 
 function App() {
-  const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
-    { text: "Device Status", icon: <DeviceIcon />, path: "/device-status" },
-    { text: "Alerts", icon: <AlertIcon />, path: "/alerts" },
-    { text: "Reports", icon: <ReportIcon />, path: "/reports" },
-    { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
-  ];
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

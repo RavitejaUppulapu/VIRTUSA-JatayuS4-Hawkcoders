@@ -12,7 +12,6 @@ import {
   Alert,
   Card,
   CardContent,
-  Divider,
 } from "@mui/material";
 import axios from "axios";
 

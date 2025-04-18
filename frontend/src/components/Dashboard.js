@@ -4,8 +4,6 @@ import {
   Grid,
   Paper,
   Typography,
-  Card,
-  CardContent,
   CircularProgress,
   Alert,
 } from "@mui/material";

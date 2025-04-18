@@ -35,8 +35,6 @@ import axios from "axios";
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [selectedSeverity, setSelectedSeverity] = useState("all");
   const [selectedDevice, setSelectedDevice] = useState("all");
   const [devices, setDevices] = useState([]);
@@ -52,12 +50,8 @@ const Alerts = () => {
         ]);
         setAlerts(alertsRes.data);
         setDevices(devicesRes.data);
-        setError(null);
       } catch (err) {
-        setError("Failed to fetch alerts data");
         console.error("Error fetching alerts:", err);
-      } finally {
-        setLoading(false);
       }
     };
 
