@@ -45,20 +45,21 @@ const Dashboard = () => {
         // Get the latest 10 readings from each device
         Object.values(sensorHistory).forEach((deviceData) => {
           deviceData.slice(-10).forEach((reading) => {
+            // Ensure all sensor values are numbers with default value of 0
             transformedData.push({
               timestamp: reading.timestamp,
-              temperature: reading.temperature,
-              humidity: reading.humidity,
-              vibration: reading.vibration,
+              temperature: Number(reading.temperature) || 0,
+              humidity: Number(reading.humidity) || 0,
+              vibration: Number(reading.vibration) || 0,
             });
           });
         });
 
-        // Sort by timestamp
+        // Sort by timestamp and take only the last 15 readings
         transformedData.sort(
           (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
         );
-        setSensorData(transformedData);
+        setSensorData(transformedData.slice(-15));
         setError(null);
       } catch (error) {
         setError("Failed to fetch dashboard data");
@@ -80,9 +81,9 @@ const Dashboard = () => {
       case "warning":
         return "#ff9800";
       case "critical":
-        return "#f44336";
+        return "#dc3545";
       default:
-        return "#2196f3";
+        return "#0288d1";
     }
   };
 
@@ -161,9 +162,19 @@ const Dashboard = () => {
             <Paper
               sx={{
                 p: 2,
-                bgcolor: alert.severity >= 7 ? "#ffebee" : "#fff3e0",
+                bgcolor:
+                  alert.severity >= 7
+                    ? "#ffebee"
+                    : alert.severity >= 4
+                    ? "#fff3e0"
+                    : "#e3f2fd",
                 border: 1,
-                borderColor: alert.severity >= 7 ? "#f44336" : "#ff9800",
+                borderColor:
+                  alert.severity >= 7
+                    ? "#dc3545"
+                    : alert.severity >= 4
+                    ? "#ff9800"
+                    : "#0288d1",
               }}
             >
               <Typography variant="subtitle1">
@@ -187,48 +198,47 @@ const Dashboard = () => {
       <Typography variant="h6" gutterBottom>
         Sensor Readings
       </Typography>
-      <Paper sx={{ p: 2, mb: 4 }}>
-        <Box height={400}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={sensorData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={(timestamp) =>
-                  new Date(timestamp).toLocaleTimeString()
-                }
-              />
-              <YAxis />
-              <Tooltip
-                labelFormatter={(timestamp) =>
-                  new Date(timestamp).toLocaleString()
-                }
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="temperature"
-                stroke="#8884d8"
-                name="Temperature (°C)"
-              />
-              <Line
-                type="monotone"
-                dataKey="humidity"
-                stroke="#82ca9d"
-                name="Humidity (%)"
-              />
-              <Line
-                type="monotone"
-                dataKey="vibration"
-                stroke="#ffc658"
-                name="Vibration"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Box>
+      <Paper sx={{ p: 2 }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={sensorData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="timestamp"
+              tickFormatter={(value) => new Date(value).toLocaleTimeString()}
+              interval="preserveStartEnd"
+            />
+            <YAxis domain={[0, "auto"]} />
+            <Tooltip
+              labelFormatter={(value) => new Date(value).toLocaleString()}
+              formatter={(value) => [value.toFixed(2), ""]}
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="temperature"
+              stroke="#dc3545"
+              name="Temperature"
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="humidity"
+              stroke="#0288d1"
+              name="Humidity"
+              dot={false}
+              strokeWidth={2}
+            />
+            <Line
+              type="monotone"
+              dataKey="vibration"
+              stroke="#ff9800"
+              name="Vibration"
+              dot={false}
+              strokeWidth={2}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </Paper>
     </Box>
   );

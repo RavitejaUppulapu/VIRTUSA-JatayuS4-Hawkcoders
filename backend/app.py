@@ -30,7 +30,7 @@ model.load_model()
 devices = {}
 sensor_history = {}
 alerts = []
-failures = []
+failures = []  # Initialize as empty list
 settings = {
     "thresholds": {
         "temperature": {"warning": 65, "critical": 75},
@@ -72,26 +72,31 @@ def generate_mock_alerts():
     return mock_alerts
 
 def generate_sensor_history():
+    """Generate mock sensor history for each device"""
     for device_id, device in devices.items():
         if device_id not in sensor_history:
             sensor_history[device_id] = []
         
-        # Generate last 10 readings with small variations
-        base_temp = device["sensors"]["temperature"]
-        base_humidity = device["sensors"]["humidity"]
-        base_vibration = device["sensors"]["vibration"]
+        # Get the base values for this device's sensors
+        base_values = device["sensors"]
         
+        # Generate last 10 readings with small variations
         for i in range(10):
             reading = {
-                "temperature": round(base_temp + random.uniform(-2, 2), 1),
-                "humidity": round(base_humidity + random.uniform(-5, 5)),
-                "vibration": round(base_vibration + random.uniform(-0.3, 0.3), 2),
                 "timestamp": (datetime.now() - timedelta(minutes=i*5)).isoformat()
             }
+            
+            # Add each sensor with a small random variation
+            for sensor_name, base_value in base_values.items():
+                variation = random.uniform(-0.1, 0.1) * base_value
+                reading[sensor_name] = round(base_value + variation, 2)
+            
             sensor_history[device_id].append(reading)
+    
+    return sensor_history
 
 def generate_mock_failures():
-    global failures
+    """Generate mock failure data for the application"""
     components = ["CPU", "Memory", "Storage", "Power Supply", "Network Card", "Cooling Fan"]
     descriptions = [
         "High temperature detected",
@@ -104,9 +109,7 @@ def generate_mock_failures():
     technicians = ["John Smith", "Alice Johnson", "Bob Wilson", None]
     statuses = ["open", "in_progress", "resolved"]
     
-    # Clear existing failures
-    failures.clear()
-    
+    mock_failures = []
     for _ in range(20):  # Generate more failures for better data
         status = random.choice(statuses)
         failure = {
@@ -122,7 +125,9 @@ def generate_mock_failures():
             "technician": random.choice(technicians) if status != "open" else None,
             "resolution_notes": "Issue resolved by replacing component" if status == "resolved" else None
         }
-        failures.append(failure)
+        mock_failures.append(failure)
+    
+    return mock_failures
 
 def init_mock_data():
     """Initialize mock data for the application"""
@@ -199,7 +204,7 @@ def init_mock_data():
     
     alerts = generate_mock_alerts()
     sensor_history = generate_sensor_history()
-    failures = generate_mock_failures()
+    failures = generate_mock_failures()  # This will now always return a list, even if empty
 
 # Initialize mock data when the server starts
 init_mock_data()
@@ -436,13 +441,26 @@ def get_mock_ai_response(message: str) -> str:
 
 @app.get("/failures")
 async def get_failures(type: Optional[str] = None):
-    filtered_failures = failures
+    if failures is None:  # Safeguard against None
+        return []
     if type:
-        filtered_failures = [f for f in failures if f["type"] == type]
-    return filtered_failures
+        return [f for f in failures if f["type"] == type]
+    return failures
 
 @app.get("/failure-stats")
 async def get_failure_stats():
+    if failures is None:  # Safeguard against None
+        return {
+            "total_failures": 0,
+            "hardware_failures": 0,
+            "software_failures": 0,
+            "critical_failures": 0,
+            "warning_failures": 0,
+            "resolved_failures": 0,
+            "avg_resolution_time": 0,
+            "component_distribution": {}
+        }
+        
     total = len(failures)
     hardware = len([f for f in failures if f["type"] == "hardware"])
     software = len([f for f in failures if f["type"] == "software"])
@@ -473,6 +491,9 @@ async def get_failure_stats():
 
 @app.get("/failure-timeline")
 async def get_failure_timeline():
+    if failures is None:  # Safeguard against None
+        return []
+        
     # Group failures by date
     timeline = []
     for i in range(7):

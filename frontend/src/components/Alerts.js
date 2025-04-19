@@ -105,14 +105,33 @@ const Alerts = () => {
       const devicesData = await devicesResponse.json();
 
       // Process alerts data
-      const processedAlerts = alertsData.map((alert) => ({
-        ...alert,
-        timestamp: new Date(alert.timestamp),
-        device_name:
-          devicesData.find((device) => device.id === alert.device_id)?.name ||
-          "Unknown Device",
-        alert_type: alert.type || "unknown",
-      }));
+      const processedAlerts = alertsData.map((alert) => {
+        // Determine severity if not provided
+        let severity = alert.severity;
+        if (!severity) {
+          switch (alert.type?.toLowerCase()) {
+            case "critical":
+              severity = 8;
+              break;
+            case "warning":
+              severity = 5;
+              break;
+            default:
+              severity = 2;
+          }
+        }
+
+        return {
+          ...alert,
+          timestamp: new Date(alert.timestamp),
+          device_name:
+            devicesData.find((device) => device.id === alert.device_id)?.name ||
+            "Unknown Device",
+          severity: severity,
+          alert_type:
+            severity >= 7 ? "critical" : severity >= 4 ? "warning" : "info",
+        };
+      });
 
       setAlerts(processedAlerts);
       setDevices(devicesData);
@@ -142,27 +161,20 @@ const Alerts = () => {
         const nextDay = new Date(date);
         nextDay.setDate(date.getDate() + 1);
 
+        const dayAlerts = processedAlerts.filter((alert) => {
+          const alertDate = new Date(alert.timestamp);
+          return (
+            alertDate >= date && alertDate < nextDay && !alert.acknowledged
+          );
+        });
+
         return {
           date: date.toISOString().split("T")[0],
-          critical: processedAlerts.filter(
-            (alert) =>
-              alert.timestamp >= date &&
-              alert.timestamp < nextDay &&
-              alert.severity >= 7
+          critical: dayAlerts.filter((alert) => alert.severity >= 7).length,
+          warning: dayAlerts.filter(
+            (alert) => alert.severity >= 4 && alert.severity < 7
           ).length,
-          warning: processedAlerts.filter(
-            (alert) =>
-              alert.timestamp >= date &&
-              alert.timestamp < nextDay &&
-              alert.severity >= 4 &&
-              alert.severity < 7
-          ).length,
-          info: processedAlerts.filter(
-            (alert) =>
-              alert.timestamp >= date &&
-              alert.timestamp < nextDay &&
-              alert.severity < 4
-          ).length,
+          info: dayAlerts.filter((alert) => alert.severity < 4).length,
         };
       });
 
@@ -308,7 +320,8 @@ const Alerts = () => {
 
   const getSeverityIcon = (severity) => {
     if (severity >= 7) return <ErrorIcon sx={{ color: "#dc3545" }} />;
-    return <WarningIcon sx={{ color: "#fd7e14" }} />;
+    if (severity >= 4) return <WarningIcon sx={{ color: "#ff9800" }} />;
+    return <InfoIcon sx={{ color: "#0288d1" }} />;
   };
 
   const getSeverityColor = (severity) => {
@@ -316,26 +329,22 @@ const Alerts = () => {
     return "warning";
   };
 
-  const getAlertTypeIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case "critical":
-        return <ErrorIcon color="error" />;
-      case "warning":
-        return <WarningIcon color="warning" />;
-      default:
-        return <InfoIcon color="info" />;
-    }
+  const getAlertTypeIcon = (severity) => {
+    if (severity >= 7) return <ErrorIcon color="error" />;
+    if (severity >= 4) return <WarningIcon color="warning" />;
+    return <InfoIcon color="info" />;
   };
 
-  const getAlertTypeColor = (type) => {
-    switch (type?.toLowerCase()) {
-      case "critical":
-        return "error";
-      case "warning":
-        return "warning";
-      default:
-        return "info";
-    }
+  const getAlertTypeColor = (severity) => {
+    if (severity >= 7) return "error";
+    if (severity >= 4) return "warning";
+    return "info";
+  };
+
+  const getAlertTypeLabel = (severity) => {
+    if (severity >= 7) return "Critical";
+    if (severity >= 4) return "Warning";
+    return "Info";
   };
 
   const getStatusLabel = (alert) => {
@@ -345,7 +354,16 @@ const Alerts = () => {
 
   const getStatusColor = (alert) => {
     if (alert.acknowledged) return "success";
-    return alert.severity >= 7 ? "error" : "warning";
+    if (alert.severity >= 7) return "error";
+    if (alert.severity >= 4) return "warning";
+    return "info";
+  };
+
+  const getStatusChipColor = (alert) => {
+    if (alert.acknowledged) return "#198754";
+    if (alert.severity >= 7) return "#dc3545";
+    if (alert.severity >= 4) return "#ff9800";
+    return "#0288d1";
   };
 
   const handleSort = (property) => {
@@ -454,7 +472,7 @@ const Alerts = () => {
             <Line
               type="monotone"
               dataKey="critical"
-              stroke="#f44336"
+              stroke="#dc3545"
               name="Critical"
               strokeWidth={2}
               dot={{ r: 3 }}
@@ -472,7 +490,7 @@ const Alerts = () => {
             <Line
               type="monotone"
               dataKey="info"
-              stroke="#2196f3"
+              stroke="#0288d1"
               name="Info"
               strokeWidth={2}
               dot={{ r: 3 }}
@@ -709,36 +727,24 @@ const Alerts = () => {
                 key={alert.id}
                 sx={{
                   bgcolor:
-                    alert.severity >= 7 ? "error.lighter" : "warning.lighter",
+                    alert.severity >= 7
+                      ? "error.lighter"
+                      : alert.severity >= 4
+                      ? "warning.lighter"
+                      : "info.lighter",
                 }}
               >
-                <TableCell>
-                  {alert.severity >= 7 ? (
-                    <ErrorIcon sx={{ color: "#dc3545" }} />
-                  ) : (
-                    <WarningIcon sx={{ color: "#fd7e14" }} />
-                  )}
-                </TableCell>
+                <TableCell>{getSeverityIcon(alert.severity)}</TableCell>
                 <TableCell>
                   {new Date(alert.timestamp).toLocaleString()}
                 </TableCell>
                 <TableCell>{alert.device_name}</TableCell>
                 <TableCell>
                   <Chip
-                    icon={getAlertTypeIcon(alert.type)}
-                    label={
-                      alert.type
-                        ? alert.type.charAt(0).toUpperCase() +
-                          alert.type.slice(1)
-                        : "Unknown"
-                    }
-                    color={getAlertTypeColor(alert.type)}
+                    icon={getAlertTypeIcon(alert.severity)}
+                    label={getAlertTypeLabel(alert.severity)}
+                    color={getAlertTypeColor(alert.severity)}
                     size="small"
-                    sx={{
-                      backgroundColor:
-                        alert.type === "critical" ? "#dc3545" : "#fd7e14",
-                      color: "white",
-                    }}
                   />
                 </TableCell>
                 <TableCell>{alert.message}</TableCell>
@@ -749,11 +755,7 @@ const Alerts = () => {
                     size="small"
                     icon={alert.acknowledged ? <CheckCircleIcon /> : undefined}
                     sx={{
-                      backgroundColor: alert.acknowledged
-                        ? "#198754"
-                        : alert.severity >= 7
-                        ? "#dc3545"
-                        : "#fd7e14",
+                      backgroundColor: getStatusChipColor(alert),
                       color: "white",
                     }}
                   />
