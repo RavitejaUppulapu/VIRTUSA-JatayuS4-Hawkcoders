@@ -247,9 +247,20 @@ const Alerts = () => {
     });
   };
 
-  const handleViewDetails = (alert) => {
+  const handleViewDetails = async (alert) => {
     setSelectedAlert(alert);
     setResolutionNotes("");
+    
+    // If the alert is resolved, fetch the resolution notes
+    if (alert.acknowledged) {
+      try {
+        const response = await axios.get(`http://localhost:8000/alerts/${alert.id}/notes`);
+        setResolutionNotes(response.data.notes || "");
+      } catch (error) {
+        console.error("Error fetching resolution notes:", error);
+      }
+    }
+    
     setOpenDialog(true);
   };
 
@@ -261,7 +272,7 @@ const Alerts = () => {
 
   const handleAcknowledge = async () => {
     try {
-      await axios.post(
+      const response = await axios.post(
         `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
         {
           acknowledged: true,
@@ -270,13 +281,13 @@ const Alerts = () => {
         }
       );
 
-      // Update alerts state
+      // Update alerts state with the returned alert data
       const updatedAlerts = alerts.map((alert) =>
         alert.id === selectedAlert.id
           ? {
               ...alert,
               acknowledged: true,
-              notes: resolutionNotes,
+              resolution_notes: resolutionNotes,
               resolution_timestamp: new Date().toISOString(),
               status: "resolved",
             }
@@ -291,10 +302,6 @@ const Alerts = () => {
         [getAlertSeverityCategory(selectedAlert.severity)]:
           prevStats[getAlertSeverityCategory(selectedAlert.severity)] - 1,
       }));
-
-      // Update trend data
-      const newTrendData = generateTrendData(updatedAlerts);
-      setAlertTrends(newTrendData);
 
       // Show success message
       setSuccessMessage("Alert successfully resolved");
@@ -883,7 +890,7 @@ const Alerts = () => {
                     </Typography>
                     <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                       <Typography variant="body1">
-                        {selectedAlert.notes || "No notes provided"}
+                        {selectedAlert.resolution_notes || resolutionNotes || "No notes provided"}
                       </Typography>
                     </Paper>
                   </Grid>

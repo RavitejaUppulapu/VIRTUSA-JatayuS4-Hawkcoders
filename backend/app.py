@@ -372,6 +372,13 @@ class PredictionAnalysis(BaseModel):
     root_cause: str
     resource_requirements: Optional[Dict[str, int]] = None
 
+class MaintenancePlan(BaseModel):
+    steps: List[str]
+    preventative_measures: List[str]
+    estimated_time: int
+    required_tools: List[str]
+    skill_level: str
+
 @app.get("/")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
@@ -477,12 +484,35 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/alerts/{alert_id}/acknowledge")
-async def acknowledge_alert(alert_id: str):
-    for alert in alerts:
-        if alert["id"] == alert_id:
-            alert["acknowledged"] = True
-            return {"message": "Alert acknowledged"}
-    raise HTTPException(status_code=404, detail="Alert not found")
+async def acknowledge_alert(alert_id: str, data: dict):
+    """Acknowledge an alert and save resolution notes"""
+    try:
+        for alert in alerts:
+            if alert["id"] == alert_id:
+                alert["acknowledged"] = True
+                alert["resolution_notes"] = data.get("notes", "")
+                alert["resolution_timestamp"] = data.get("resolution_timestamp", datetime.now().isoformat())
+                return {
+                    "message": "Alert acknowledged",
+                    "alert": alert
+                }
+        raise HTTPException(status_code=404, detail="Alert not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/alerts/{alert_id}/notes")
+async def get_alert_notes(alert_id: str):
+    """Get resolution notes for an alert"""
+    try:
+        alert = next((a for a in alerts if a["id"] == alert_id), None)
+        if alert:
+            return {
+                "notes": alert.get("resolution_notes", ""),
+                "resolution_timestamp": alert.get("resolution_timestamp", None)
+            }
+        raise HTTPException(status_code=404, detail="Alert not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/settings")
 async def get_settings():
@@ -1174,6 +1204,30 @@ async def move_to_maintenance(alert_id: str):
         alert["maintenance_timestamp"] = datetime.now().isoformat()
         
         return {"message": "Alert moved to maintenance successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/maintenance/plan/{alert_id}")
+async def get_maintenance_plan(alert_id: str):
+    """Get maintenance plan for an alert"""
+    try:
+        # Find the alert
+        alert = next((a for a in alerts if a["id"] == alert_id), None)
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        # Get device data
+        device = devices.get(alert["device_id"])
+        if not device:
+            device = {"type": "unknown", "name": "Unknown Device"}
+
+        # Get prediction analysis
+        analysis = await get_prediction_analysis(alert_id)
+
+        # Use ML model to generate maintenance plan
+        maintenance_plan = model.generate_maintenance_plan(alert, device, analysis)
+        
+        return maintenance_plan
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

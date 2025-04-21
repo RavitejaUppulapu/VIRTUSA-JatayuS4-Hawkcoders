@@ -448,4 +448,100 @@ class PredictiveMaintenanceModel:
             "temperature": "normal",
             "humidity": "normal",
             "power": "normal"
-        } 
+        }
+
+    def generate_maintenance_plan(self, alert, device, analysis):
+        """Generate a maintenance plan based on alert, device and analysis data"""
+        try:
+            # Prepare context for GPT
+            context = {
+                "alert_type": alert.get("type", "unknown"),
+                "severity": alert.get("severity", "unknown"),
+                "device_type": device.get("type", "unknown"),
+                "root_cause": analysis.root_cause,
+                "causes": analysis.causes
+            }
+
+            # In a real implementation, this would use GPT API
+            # For now, return structured mock data based on context
+            if "temperature" in str(analysis.root_cause).lower():
+                return {
+                    "steps": [
+                        "1. Power down the affected system",
+                        "2. Inspect cooling fans and heat sinks",
+                        "3. Clean any dust or debris",
+                        "4. Check thermal paste application",
+                        "5. Test system temperatures after restart"
+                    ],
+                    "preventative_measures": [
+                        "Regular cleaning schedule",
+                        "Temperature monitoring alerts",
+                        "Airflow optimization",
+                        "Regular thermal paste replacement"
+                    ],
+                    "estimated_time": 120,
+                    "required_tools": [
+                        "Thermal paste",
+                        "Cleaning supplies",
+                        "Temperature monitoring tools",
+                        "Screwdrivers"
+                    ],
+                    "skill_level": "Intermediate"
+                }
+            elif "power" in str(analysis.root_cause).lower():
+                return {
+                    "steps": [
+                        "1. Check power supply connections",
+                        "2. Test voltage levels",
+                        "3. Inspect circuit breakers",
+                        "4. Verify UPS functionality",
+                        "5. Test under load conditions"
+                    ],
+                    "preventative_measures": [
+                        "Regular power quality monitoring",
+                        "UPS maintenance schedule",
+                        "Backup power testing",
+                        "Load balancing review"
+                    ],
+                    "estimated_time": 90,
+                    "required_tools": [
+                        "Multimeter",
+                        "Power supply tester",
+                        "Safety equipment",
+                        "Spare cables"
+                    ],
+                    "skill_level": "Advanced"
+                }
+            else:
+                return {
+                    "steps": [
+                        "1. Diagnose system status",
+                        "2. Check error logs",
+                        "3. Test component functionality",
+                        "4. Replace or repair as needed",
+                        "5. Verify system operation"
+                    ],
+                    "preventative_measures": [
+                        "Regular maintenance schedule",
+                        "System monitoring",
+                        "Component lifecycle tracking",
+                        "Staff training"
+                    ],
+                    "estimated_time": 60,
+                    "required_tools": [
+                        "Diagnostic tools",
+                        "Basic tool kit",
+                        "Spare parts",
+                        "Testing equipment"
+                    ],
+                    "skill_level": "Intermediate"
+                }
+        except Exception as e:
+            print(f"Error generating maintenance plan: {str(e)}")
+            return {
+                "steps": ["System maintenance required"],
+                "preventative_measures": ["Regular system checks"],
+                "estimated_time": 60,
+                "required_tools": ["Basic tool kit"],
+                "skill_level": "Basic"
+            } 
