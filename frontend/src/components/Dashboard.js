@@ -207,6 +207,21 @@ const Dashboard = () => {
       setEnvironmentalAlerts(processedEnvironmentalAlerts);
       setDevices(devicesRes.data || []);
 
+      // Fetch analysis data for all alerts
+      const analysisPromises = allAlerts.map(async (alert) => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/predictions/analysis/${alert.id}`);
+          return { [alert.id]: response.data };
+        } catch (error) {
+          console.error(`Error fetching analysis for alert ${alert.id}:`, error);
+          return { [alert.id]: null };
+        }
+      });
+
+      const analysisResults = await Promise.all(analysisPromises);
+      const combinedAnalysisData = analysisResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      setAnalysisData(combinedAnalysisData);
+
       // Update statistics
       const stats = {
         total: allAlerts.length,
@@ -1314,9 +1329,7 @@ const Dashboard = () => {
 
   const renderPredictions = () => (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Predictions
-      </Typography>
+      
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
