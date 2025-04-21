@@ -65,9 +65,9 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
-```
 
+```
+python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 3. Set up the frontend
 
 ```bash

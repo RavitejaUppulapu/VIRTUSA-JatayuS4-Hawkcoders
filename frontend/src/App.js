@@ -32,6 +32,7 @@ import "./App.css";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import WhyChooseUs from "./components/WhyChooseUs";
 import FailureAnalysis from "./components/FailureAnalysis";
+import DeviceInfo from "./components/DeviceInfo";
 
 const drawerWidth = 240;
 
@@ -134,6 +135,7 @@ function App() {
             <Route path="/failure-analysis" element={<FailureAnalysis />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/why-choose-us" element={<WhyChooseUs />} />
+            <Route path="/device-status/:deviceId" element={<DeviceInfo />} />
           </Routes>
           <AIChat />
         </Layout>

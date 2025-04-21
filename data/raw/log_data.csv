@@ -1,201 +1,201 @@
 timestamp,device_id,component_type,log_type,log_message,event_severity,error_code,performance_metrics,location
-2025-03-27 20:50:49,dev_8,AC_Unit,IOT_log,Signal lost,1,IOT_E202,,Delhi
-2025-04-13 21:11:49,dev_5,ATM,Server_log,Unexpected shutdown,4,,"CPU:89.38%, MEM:82.83%",Hyderabad
-2025-04-02 18:44:49,dev_10,ATM,Server_log,General log: system healthy,4,,"CPU:80.68%, MEM:99.46%",Chennai
-2025-04-17 05:06:49,dev_10,Server,ATM_log,Network timeout,1,,,Bangalore
-2025-03-21 02:17:49,dev_2,Server,ATM_log,Cash dispenser error,1,ATM_E001,,Delhi
-2025-04-17 05:37:49,dev_7,Server,ATM_log,General log: operation normal,3,,,Mumbai
-2025-03-26 00:34:49,dev_4,AC_Unit,Server_log,Disk failure warning,4,SRV_E101,"CPU:88.17%, MEM:69.49%",Mumbai
-2025-03-31 09:53:49,dev_9,ATM,ATM_log,General log: operation normal,1,,,Mumbai
-2025-03-19 08:56:49,dev_8,AC_Unit,Server_log,High CPU usage detected,5,,"CPU:73.05%, MEM:66.11%",Bangalore
-2025-04-18 09:48:49,dev_5,AC_Unit,ATM_log,Printer error,2,ATM_E003,,Delhi
-2025-04-03 14:14:49,dev_9,Server,ATM_log,Printer error,1,ATM_E001,,Mumbai
-2025-04-01 09:20:49,dev_1,AC_Unit,IOT_log,Intermittent connectivity,3,,,Hyderabad
-2025-03-26 11:54:49,dev_4,Server,Server_log,High CPU usage detected,3,,"CPU:77.38%, MEM:66.43%",Chennai
-2025-03-27 12:55:49,dev_1,Server,Server_log,Disk failure warning,5,SRV_E103,"CPU:75.6%, MEM:71.4%",Delhi
-2025-04-16 02:54:49,dev_9,Server,ATM_log,General log: operation normal,3,,,Chennai
-2025-04-17 07:18:49,dev_3,Server,Server_log,Disk failure warning,5,SRV_E103,"CPU:75.2%, MEM:95.87%",Bangalore
-2025-03-22 21:40:49,dev_6,UPS,ATM_log,Cash dispenser error,1,ATM_E001,,Bangalore
-2025-03-25 02:54:49,dev_3,ATM,Server_log,Unexpected shutdown,4,,"CPU:72.41%, MEM:80.98%",Mumbai
-2025-04-05 17:26:49,dev_6,Server,Server_log,Unexpected shutdown,4,,"CPU:82.31%, MEM:99.3%",Chennai
-2025-03-22 17:55:49,dev_3,AC_Unit,ATM_log,Card reader malfunction,2,ATM_E001,,Delhi
-2025-04-15 22:45:49,dev_6,UPS,ATM_log,Network timeout,2,,,Delhi
-2025-03-23 15:59:49,dev_7,UPS,IOT_log,General log: stable,1,,,Delhi
-2025-04-15 06:54:49,dev_3,ATM,ATM_log,Card reader malfunction,1,ATM_E001,,Hyderabad
-2025-03-23 08:37:49,dev_2,AC_Unit,ATM_log,Cash dispenser error,1,ATM_E003,,Hyderabad
-2025-04-04 16:55:49,dev_6,ATM,Server_log,High CPU usage detected,3,,"CPU:73.36%, MEM:75.91%",Hyderabad
-2025-03-20 02:33:49,dev_7,UPS,Server_log,Unexpected shutdown,3,,"CPU:99.08%, MEM:94.62%",Hyderabad
-2025-04-07 14:02:49,dev_3,AC_Unit,Server_log,Memory leak suspected,2,,"CPU:94.51%, MEM:70.32%",Bangalore
-2025-03-30 01:21:49,dev_4,AC_Unit,Server_log,General log: system healthy,5,,"CPU:75.13%, MEM:86.75%",Chennai
-2025-04-17 18:43:49,dev_7,Server,ATM_log,General log: operation normal,1,,,Chennai
-2025-03-29 03:10:49,dev_1,UPS,Server_log,General log: system healthy,5,,"CPU:97.88%, MEM:82.27%",Bangalore
-2025-04-07 02:28:49,dev_6,UPS,ATM_log,Cash dispenser error,2,ATM_E003,,Bangalore
-2025-04-11 20:03:49,dev_5,ATM,IOT_log,Signal lost,3,IOT_E201,,Chennai
-2025-04-13 17:45:49,dev_4,AC_Unit,IOT_log,Sensor calibration needed,1,,,Delhi
-2025-03-31 08:38:49,dev_3,Server,IOT_log,Signal lost,3,IOT_E203,,Mumbai
-2025-04-07 02:59:49,dev_6,Server,ATM_log,Printer error,3,ATM_E002,,Delhi
-2025-04-13 05:58:49,dev_2,ATM,IOT_log,Battery low,1,IOT_E203,,Mumbai
-2025-04-03 20:39:49,dev_10,Server,Server_log,Memory leak suspected,4,,"CPU:87.15%, MEM:71.2%",Mumbai
-2025-04-17 20:51:49,dev_10,Server,IOT_log,Signal lost,1,IOT_E202,,Hyderabad
-2025-03-26 23:35:49,dev_10,ATM,Server_log,Disk failure warning,3,SRV_E101,"CPU:93.08%, MEM:67.48%",Bangalore
-2025-03-26 07:10:49,dev_8,AC_Unit,IOT_log,General log: stable,3,,,Mumbai
-2025-03-21 01:10:49,dev_6,Server,ATM_log,Printer error,2,ATM_E003,,Delhi
-2025-03-27 11:52:49,dev_3,ATM,Server_log,General log: system healthy,2,,"CPU:79.71%, MEM:77.02%",Delhi
-2025-04-13 01:40:49,dev_10,Server,ATM_log,Printer error,1,ATM_E002,,Delhi
-2025-03-26 18:45:49,dev_6,AC_Unit,IOT_log,Sensor calibration needed,3,,,Mumbai
-2025-03-28 00:14:49,dev_6,UPS,Server_log,Memory leak suspected,3,,"CPU:85.23%, MEM:69.7%",Hyderabad
-2025-03-27 18:38:49,dev_5,ATM,ATM_log,Printer error,2,ATM_E003,,Hyderabad
-2025-04-05 15:04:49,dev_7,UPS,Server_log,General log: system healthy,5,,"CPU:73.45%, MEM:84.42%",Chennai
-2025-04-15 05:10:49,dev_10,Server,Server_log,High CPU usage detected,2,,"CPU:78.66%, MEM:83.25%",Mumbai
-2025-04-09 20:40:49,dev_5,ATM,Server_log,Memory leak suspected,5,,"CPU:74.63%, MEM:79.25%",Hyderabad
-2025-04-12 21:56:49,dev_9,ATM,IOT_log,General log: stable,2,,,Bangalore
-2025-03-27 20:33:49,dev_3,UPS,ATM_log,Cash dispenser error,2,ATM_E001,,Mumbai
-2025-04-12 07:16:49,dev_9,AC_Unit,Server_log,Memory leak suspected,2,,"CPU:85.98%, MEM:62.07%",Bangalore
-2025-04-17 08:24:49,dev_9,UPS,ATM_log,Network timeout,1,,,Mumbai
-2025-04-05 18:42:49,dev_10,UPS,ATM_log,Cash dispenser error,1,ATM_E001,,Mumbai
-2025-03-29 11:55:49,dev_8,ATM,Server_log,Unexpected shutdown,5,,"CPU:80.1%, MEM:65.38%",Bangalore
-2025-03-20 23:44:49,dev_2,UPS,Server_log,Unexpected shutdown,4,,"CPU:71.9%, MEM:99.6%",Mumbai
-2025-04-13 06:58:49,dev_5,UPS,Server_log,Memory leak suspected,4,,"CPU:79.67%, MEM:92.39%",Chennai
-2025-03-31 19:51:49,dev_2,ATM,IOT_log,Intermittent connectivity,3,,,Bangalore
-2025-04-11 03:57:49,dev_7,UPS,IOT_log,Intermittent connectivity,3,,,Delhi
-2025-03-21 13:30:49,dev_5,ATM,IOT_log,Sensor calibration needed,3,,,Chennai
-2025-03-31 04:09:49,dev_10,Server,Server_log,Memory leak suspected,3,,"CPU:77.64%, MEM:87.26%",Hyderabad
-2025-04-12 14:52:49,dev_1,UPS,IOT_log,Intermittent connectivity,1,,,Hyderabad
-2025-03-23 00:51:49,dev_10,AC_Unit,IOT_log,Sensor calibration needed,1,,,Bangalore
-2025-04-06 03:35:49,dev_9,AC_Unit,IOT_log,Intermittent connectivity,1,,,Bangalore
-2025-03-23 22:21:49,dev_10,UPS,Server_log,Memory leak suspected,3,,"CPU:92.81%, MEM:83.83%",Hyderabad
-2025-03-31 02:23:49,dev_2,ATM,ATM_log,Network timeout,3,,,Delhi
-2025-03-21 09:04:49,dev_7,AC_Unit,IOT_log,Intermittent connectivity,3,,,Chennai
-2025-03-30 05:58:49,dev_3,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
-2025-03-27 22:35:49,dev_1,UPS,IOT_log,Battery low,1,IOT_E203,,Bangalore
-2025-04-03 12:03:49,dev_6,ATM,Server_log,Disk failure warning,4,SRV_E102,"CPU:84.15%, MEM:76.47%",Bangalore
-2025-03-21 22:17:49,dev_2,Server,Server_log,Unexpected shutdown,4,,"CPU:80.47%, MEM:97.18%",Mumbai
-2025-04-09 21:34:49,dev_10,ATM,Server_log,Memory leak suspected,5,,"CPU:94.92%, MEM:98.6%",Mumbai
-2025-03-26 05:12:49,dev_9,AC_Unit,IOT_log,Battery low,1,IOT_E202,,Hyderabad
-2025-03-27 04:35:49,dev_3,ATM,ATM_log,Card reader malfunction,1,ATM_E001,,Mumbai
-2025-04-17 06:57:49,dev_6,Server,Server_log,Unexpected shutdown,5,,"CPU:73.73%, MEM:89.23%",Bangalore
-2025-03-29 17:17:49,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:98.15%, MEM:67.25%",Bangalore
-2025-04-13 05:23:49,dev_9,AC_Unit,ATM_log,Network timeout,3,,,Bangalore
-2025-03-22 22:55:49,dev_5,ATM,ATM_log,Card reader malfunction,3,ATM_E001,,Chennai
-2025-03-22 13:19:49,dev_4,Server,IOT_log,Intermittent connectivity,3,,,Bangalore
-2025-04-18 00:00:49,dev_8,Server,IOT_log,Sensor calibration needed,1,,,Mumbai
-2025-04-10 01:09:49,dev_5,AC_Unit,Server_log,Disk failure warning,5,SRV_E102,"CPU:71.99%, MEM:89.64%",Chennai
-2025-04-12 06:41:49,dev_9,UPS,ATM_log,Cash dispenser error,3,ATM_E003,,Delhi
-2025-03-19 09:25:49,dev_10,AC_Unit,IOT_log,Sensor calibration needed,2,,,Bangalore
-2025-04-16 10:43:49,dev_6,AC_Unit,IOT_log,Signal lost,1,IOT_E201,,Bangalore
-2025-04-02 13:03:49,dev_1,UPS,IOT_log,Battery low,3,IOT_E201,,Bangalore
-2025-03-29 05:42:49,dev_5,UPS,Server_log,High CPU usage detected,3,,"CPU:87.23%, MEM:93.67%",Chennai
-2025-04-07 21:15:49,dev_4,UPS,IOT_log,Signal lost,1,IOT_E203,,Bangalore
-2025-03-21 03:49:49,dev_5,ATM,ATM_log,Network timeout,3,,,Chennai
-2025-03-24 03:12:49,dev_3,AC_Unit,ATM_log,Network timeout,1,,,Hyderabad
-2025-03-26 11:34:49,dev_6,AC_Unit,IOT_log,Signal lost,2,IOT_E201,,Bangalore
-2025-04-03 19:05:49,dev_10,ATM,ATM_log,General log: operation normal,1,,,Chennai
-2025-03-21 23:36:49,dev_9,AC_Unit,ATM_log,Card reader malfunction,1,ATM_E001,,Chennai
-2025-04-08 07:24:49,dev_8,Server,IOT_log,Battery low,1,IOT_E202,,Bangalore
-2025-04-08 00:49:49,dev_6,ATM,Server_log,Disk failure warning,3,SRV_E101,"CPU:74.19%, MEM:91.81%",Hyderabad
-2025-03-31 15:29:49,dev_2,Server,Server_log,Unexpected shutdown,5,,"CPU:76.05%, MEM:66.55%",Delhi
-2025-04-05 05:36:49,dev_1,ATM,ATM_log,Network timeout,1,,,Delhi
-2025-03-21 10:12:49,dev_9,Server,IOT_log,Sensor calibration needed,3,,,Hyderabad
-2025-03-26 13:46:49,dev_6,AC_Unit,ATM_log,Printer error,3,ATM_E003,,Mumbai
-2025-04-09 15:56:49,dev_1,AC_Unit,Server_log,General log: system healthy,4,,"CPU:74.93%, MEM:92.58%",Bangalore
-2025-04-04 23:52:49,dev_6,UPS,ATM_log,Card reader malfunction,2,ATM_E001,,Bangalore
-2025-04-11 13:14:49,dev_3,Server,IOT_log,General log: stable,1,,,Hyderabad
-2025-04-15 09:15:49,dev_1,UPS,IOT_log,General log: stable,1,,,Bangalore
-2025-03-30 19:18:49,dev_2,ATM,IOT_log,Sensor calibration needed,2,,,Hyderabad
-2025-04-04 08:53:49,dev_9,AC_Unit,IOT_log,Battery low,1,IOT_E203,,Chennai
-2025-03-28 01:00:49,dev_5,UPS,IOT_log,General log: stable,2,,,Hyderabad
-2025-03-30 01:16:49,dev_3,UPS,IOT_log,General log: stable,1,,,Hyderabad
-2025-04-09 17:10:49,dev_2,UPS,IOT_log,Battery low,2,IOT_E203,,Mumbai
-2025-04-12 09:15:49,dev_7,AC_Unit,ATM_log,General log: operation normal,2,,,Mumbai
-2025-03-20 14:16:49,dev_8,AC_Unit,ATM_log,Cash dispenser error,3,ATM_E001,,Mumbai
-2025-03-20 17:07:49,dev_10,UPS,ATM_log,General log: operation normal,1,,,Mumbai
-2025-03-25 21:54:49,dev_5,Server,Server_log,Disk failure warning,5,SRV_E101,"CPU:89.96%, MEM:80.92%",Chennai
-2025-04-15 15:05:49,dev_1,AC_Unit,IOT_log,Signal lost,2,IOT_E203,,Bangalore
-2025-04-15 17:06:49,dev_1,ATM,IOT_log,Battery low,2,IOT_E202,,Mumbai
-2025-03-21 06:21:49,dev_5,ATM,Server_log,Memory leak suspected,2,,"CPU:80.76%, MEM:95.09%",Bangalore
-2025-04-06 08:31:49,dev_5,UPS,Server_log,Memory leak suspected,2,,"CPU:81.77%, MEM:92.66%",Chennai
-2025-04-13 22:14:49,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:83.17%, MEM:75.08%",Hyderabad
-2025-03-24 02:17:49,dev_8,Server,Server_log,Disk failure warning,2,SRV_E103,"CPU:83.88%, MEM:72.06%",Delhi
-2025-03-20 21:03:49,dev_3,UPS,ATM_log,Printer error,2,ATM_E001,,Chennai
-2025-04-16 12:19:49,dev_6,ATM,IOT_log,General log: stable,3,,,Delhi
-2025-03-31 13:18:49,dev_6,ATM,IOT_log,Battery low,2,IOT_E202,,Chennai
-2025-03-27 23:19:49,dev_7,Server,IOT_log,Sensor calibration needed,1,,,Delhi
-2025-03-29 15:28:49,dev_8,UPS,ATM_log,Printer error,2,ATM_E001,,Mumbai
-2025-04-08 12:57:49,dev_9,Server,IOT_log,Intermittent connectivity,2,,,Delhi
-2025-03-23 13:55:49,dev_8,UPS,Server_log,High CPU usage detected,5,,"CPU:92.43%, MEM:80.11%",Delhi
-2025-04-04 10:53:49,dev_8,ATM,Server_log,Unexpected shutdown,2,,"CPU:76.97%, MEM:95.98%",Hyderabad
-2025-04-01 04:00:49,dev_2,AC_Unit,IOT_log,Battery low,3,IOT_E203,,Delhi
-2025-04-04 10:37:49,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:81.52%, MEM:81.74%",Chennai
-2025-03-26 23:37:49,dev_8,ATM,IOT_log,Battery low,1,IOT_E202,,Hyderabad
-2025-04-07 00:09:49,dev_5,AC_Unit,ATM_log,Card reader malfunction,2,ATM_E001,,Hyderabad
-2025-03-22 22:13:49,dev_7,ATM,IOT_log,Battery low,1,IOT_E201,,Bangalore
-2025-03-20 08:47:49,dev_8,Server,ATM_log,Printer error,1,ATM_E003,,Bangalore
-2025-03-22 23:23:49,dev_2,UPS,IOT_log,General log: stable,3,,,Chennai
-2025-04-14 06:00:49,dev_9,ATM,Server_log,General log: system healthy,5,,"CPU:97.19%, MEM:84.97%",Delhi
-2025-03-20 04:11:49,dev_3,Server,ATM_log,Printer error,3,ATM_E003,,Mumbai
-2025-03-30 10:28:49,dev_7,UPS,IOT_log,Battery low,2,IOT_E202,,Delhi
-2025-03-19 10:42:49,dev_8,Server,Server_log,General log: system healthy,4,,"CPU:73.51%, MEM:97.59%",Mumbai
-2025-03-22 22:25:49,dev_6,Server,ATM_log,General log: operation normal,3,,,Mumbai
-2025-04-08 23:38:49,dev_3,Server,IOT_log,Signal lost,3,IOT_E201,,Delhi
-2025-03-25 09:25:49,dev_8,UPS,Server_log,Unexpected shutdown,2,,"CPU:88.83%, MEM:73.4%",Delhi
-2025-04-02 17:59:49,dev_7,Server,IOT_log,Sensor calibration needed,1,,,Hyderabad
-2025-04-10 15:42:49,dev_5,Server,IOT_log,Signal lost,1,IOT_E203,,Hyderabad
-2025-04-17 09:08:49,dev_8,ATM,IOT_log,General log: stable,1,,,Delhi
-2025-03-26 00:25:49,dev_7,Server,IOT_log,Signal lost,3,IOT_E203,,Delhi
-2025-04-17 08:36:49,dev_7,AC_Unit,ATM_log,Cash dispenser error,3,ATM_E002,,Delhi
-2025-04-12 01:05:49,dev_8,Server,IOT_log,General log: stable,3,,,Bangalore
-2025-03-30 14:11:49,dev_4,AC_Unit,ATM_log,Cash dispenser error,1,ATM_E001,,Chennai
-2025-03-26 04:53:49,dev_7,ATM,Server_log,General log: system healthy,4,,"CPU:74.18%, MEM:91.76%",Chennai
-2025-04-14 15:23:49,dev_5,ATM,Server_log,Memory leak suspected,2,,"CPU:88.6%, MEM:81.34%",Bangalore
-2025-04-14 10:22:49,dev_1,AC_Unit,IOT_log,General log: stable,2,,,Chennai
-2025-04-15 22:40:49,dev_9,Server,IOT_log,Sensor calibration needed,3,,,Mumbai
-2025-04-13 07:26:49,dev_9,UPS,Server_log,Memory leak suspected,3,,"CPU:96.82%, MEM:91.54%",Hyderabad
-2025-03-28 10:39:49,dev_6,AC_Unit,IOT_log,General log: stable,2,,,Mumbai
-2025-04-01 01:00:49,dev_2,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
-2025-04-11 19:17:49,dev_6,UPS,Server_log,Disk failure warning,4,SRV_E101,"CPU:74.55%, MEM:72.47%",Hyderabad
-2025-03-20 04:08:49,dev_6,UPS,ATM_log,Network timeout,3,,,Chennai
-2025-04-12 10:28:49,dev_2,ATM,IOT_log,General log: stable,1,,,Mumbai
-2025-03-29 18:47:49,dev_4,UPS,ATM_log,General log: operation normal,3,,,Hyderabad
-2025-03-20 21:11:49,dev_7,ATM,ATM_log,Printer error,3,ATM_E002,,Mumbai
-2025-04-17 18:56:49,dev_1,Server,IOT_log,Sensor calibration needed,3,,,Bangalore
-2025-03-23 13:02:49,dev_5,UPS,Server_log,Unexpected shutdown,5,,"CPU:77.45%, MEM:89.76%",Chennai
-2025-04-08 20:36:49,dev_2,ATM,ATM_log,General log: operation normal,1,,,Delhi
-2025-03-27 18:38:49,dev_9,ATM,IOT_log,Signal lost,3,IOT_E201,,Bangalore
-2025-04-09 06:36:49,dev_7,ATM,ATM_log,General log: operation normal,1,,,Chennai
-2025-04-13 21:35:49,dev_9,AC_Unit,Server_log,Disk failure warning,2,SRV_E103,"CPU:71.01%, MEM:82.8%",Mumbai
-2025-03-22 03:51:49,dev_2,ATM,IOT_log,General log: stable,2,,,Hyderabad
-2025-04-01 03:55:49,dev_5,Server,ATM_log,Printer error,3,ATM_E003,,Bangalore
-2025-04-14 15:49:49,dev_4,AC_Unit,ATM_log,Card reader malfunction,3,ATM_E003,,Mumbai
-2025-03-22 19:06:49,dev_9,UPS,ATM_log,Network timeout,3,,,Delhi
-2025-04-16 12:54:49,dev_4,UPS,Server_log,Memory leak suspected,3,,"CPU:92.87%, MEM:95.07%",Bangalore
-2025-04-15 11:21:49,dev_2,Server,Server_log,Unexpected shutdown,4,,"CPU:80.26%, MEM:92.85%",Bangalore
-2025-03-29 23:41:49,dev_10,Server,IOT_log,Signal lost,2,IOT_E202,,Delhi
-2025-04-13 20:40:49,dev_4,Server,Server_log,Disk failure warning,3,SRV_E103,"CPU:73.32%, MEM:93.86%",Chennai
-2025-03-26 10:04:49,dev_8,UPS,Server_log,Disk failure warning,5,SRV_E103,"CPU:73.82%, MEM:75.89%",Chennai
-2025-04-15 15:19:49,dev_10,ATM,ATM_log,General log: operation normal,1,,,Bangalore
-2025-04-09 21:04:49,dev_2,ATM,IOT_log,Sensor calibration needed,3,,,Hyderabad
-2025-03-31 08:11:49,dev_10,Server,IOT_log,Signal lost,3,IOT_E203,,Hyderabad
-2025-04-03 00:11:49,dev_3,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
-2025-03-22 11:52:49,dev_8,ATM,Server_log,General log: system healthy,2,,"CPU:93.92%, MEM:66.0%",Chennai
-2025-03-28 13:06:49,dev_10,Server,ATM_log,Printer error,1,ATM_E001,,Delhi
-2025-03-31 02:18:49,dev_3,UPS,ATM_log,Card reader malfunction,2,ATM_E001,,Bangalore
-2025-04-16 12:37:49,dev_4,ATM,IOT_log,Signal lost,2,IOT_E202,,Mumbai
-2025-03-20 06:04:49,dev_1,ATM,ATM_log,General log: operation normal,3,,,Bangalore
-2025-03-23 12:07:49,dev_5,Server,IOT_log,Intermittent connectivity,2,,,Chennai
-2025-03-31 00:03:49,dev_2,AC_Unit,ATM_log,General log: operation normal,2,,,Chennai
-2025-04-07 09:29:49,dev_8,ATM,ATM_log,Printer error,1,ATM_E001,,Delhi
-2025-04-16 04:19:49,dev_5,Server,ATM_log,Card reader malfunction,2,ATM_E003,,Mumbai
-2025-03-27 17:18:49,dev_4,UPS,IOT_log,Sensor calibration needed,2,,,Bangalore
-2025-03-28 05:30:49,dev_4,Server,ATM_log,Card reader malfunction,1,ATM_E001,,Chennai
-2025-03-31 02:50:49,dev_3,ATM,ATM_log,Cash dispenser error,1,ATM_E002,,Delhi
-2025-03-20 15:27:49,dev_7,ATM,ATM_log,Card reader malfunction,2,ATM_E003,,Bangalore
-2025-04-03 05:50:49,dev_4,UPS,ATM_log,General log: operation normal,1,,,Delhi
-2025-03-29 23:28:49,dev_5,Server,Server_log,General log: system healthy,2,,"CPU:76.88%, MEM:88.89%",Bangalore
-2025-04-11 08:36:49,dev_3,ATM,ATM_log,General log: operation normal,3,,,Hyderabad
-2025-03-28 07:08:49,dev_3,ATM,Server_log,General log: system healthy,2,,"CPU:91.6%, MEM:85.65%",Mumbai
-2025-03-21 03:28:49,dev_2,ATM,IOT_log,Battery low,3,IOT_E203,,Chennai
-2025-03-23 20:03:49,dev_7,UPS,ATM_log,General log: operation normal,2,,,Bangalore
-2025-04-11 05:10:49,dev_7,AC_Unit,IOT_log,General log: stable,1,,,Delhi
-2025-04-05 16:44:49,dev_8,Server,Server_log,General log: system healthy,5,,"CPU:90.82%, MEM:81.71%",Hyderabad
-2025-04-10 15:00:49,dev_1,ATM,ATM_log,Printer error,3,ATM_E001,,Delhi
-2025-03-27 10:34:49,dev_6,ATM,Server_log,General log: system healthy,4,,"CPU:77.55%, MEM:73.83%",Mumbai
+2025-03-28 19:05:02,dev_8,AC_Unit,IOT_log,Signal lost,1,IOT_E202,,Delhi
+2025-04-14 19:26:02,dev_5,ATM,Server_log,Unexpected shutdown,4,,"CPU:89.38%, MEM:82.83%",Hyderabad
+2025-04-03 16:59:02,dev_10,ATM,Server_log,General log: system healthy,4,,"CPU:80.68%, MEM:99.46%",Chennai
+2025-04-18 03:21:02,dev_10,Server,ATM_log,Network timeout,1,,,Bangalore
+2025-03-22 00:32:02,dev_2,Server,ATM_log,Cash dispenser error,1,ATM_E001,,Delhi
+2025-04-18 03:52:02,dev_7,Server,ATM_log,General log: operation normal,3,,,Mumbai
+2025-03-26 22:49:02,dev_4,AC_Unit,Server_log,Disk failure warning,4,SRV_E101,"CPU:88.17%, MEM:69.49%",Mumbai
+2025-04-01 08:08:02,dev_9,ATM,ATM_log,General log: operation normal,1,,,Mumbai
+2025-03-20 07:11:02,dev_8,AC_Unit,Server_log,High CPU usage detected,5,,"CPU:73.05%, MEM:66.11%",Bangalore
+2025-04-19 08:03:02,dev_5,AC_Unit,ATM_log,Printer error,2,ATM_E003,,Delhi
+2025-04-04 12:29:02,dev_9,Server,ATM_log,Printer error,1,ATM_E001,,Mumbai
+2025-04-02 07:35:02,dev_1,AC_Unit,IOT_log,Intermittent connectivity,3,,,Hyderabad
+2025-03-27 10:09:02,dev_4,Server,Server_log,High CPU usage detected,3,,"CPU:77.38%, MEM:66.43%",Chennai
+2025-03-28 11:10:02,dev_1,Server,Server_log,Disk failure warning,5,SRV_E103,"CPU:75.6%, MEM:71.4%",Delhi
+2025-04-17 01:09:02,dev_9,Server,ATM_log,General log: operation normal,3,,,Chennai
+2025-04-18 05:33:02,dev_3,Server,Server_log,Disk failure warning,5,SRV_E103,"CPU:75.2%, MEM:95.87%",Bangalore
+2025-03-23 19:55:02,dev_6,UPS,ATM_log,Cash dispenser error,1,ATM_E001,,Bangalore
+2025-03-26 01:09:02,dev_3,ATM,Server_log,Unexpected shutdown,4,,"CPU:72.41%, MEM:80.98%",Mumbai
+2025-04-06 15:41:02,dev_6,Server,Server_log,Unexpected shutdown,4,,"CPU:82.31%, MEM:99.3%",Chennai
+2025-03-23 16:10:02,dev_3,AC_Unit,ATM_log,Card reader malfunction,2,ATM_E001,,Delhi
+2025-04-16 21:00:02,dev_6,UPS,ATM_log,Network timeout,2,,,Delhi
+2025-03-24 14:14:02,dev_7,UPS,IOT_log,General log: stable,1,,,Delhi
+2025-04-16 05:09:02,dev_3,ATM,ATM_log,Card reader malfunction,1,ATM_E001,,Hyderabad
+2025-03-24 06:52:02,dev_2,AC_Unit,ATM_log,Cash dispenser error,1,ATM_E003,,Hyderabad
+2025-04-05 15:10:02,dev_6,ATM,Server_log,High CPU usage detected,3,,"CPU:73.36%, MEM:75.91%",Hyderabad
+2025-03-21 00:48:02,dev_7,UPS,Server_log,Unexpected shutdown,3,,"CPU:99.08%, MEM:94.62%",Hyderabad
+2025-04-08 12:17:02,dev_3,AC_Unit,Server_log,Memory leak suspected,2,,"CPU:94.51%, MEM:70.32%",Bangalore
+2025-03-30 23:36:02,dev_4,AC_Unit,Server_log,General log: system healthy,5,,"CPU:75.13%, MEM:86.75%",Chennai
+2025-04-18 16:58:02,dev_7,Server,ATM_log,General log: operation normal,1,,,Chennai
+2025-03-30 01:25:02,dev_1,UPS,Server_log,General log: system healthy,5,,"CPU:97.88%, MEM:82.27%",Bangalore
+2025-04-08 00:43:02,dev_6,UPS,ATM_log,Cash dispenser error,2,ATM_E003,,Bangalore
+2025-04-12 18:18:02,dev_5,ATM,IOT_log,Signal lost,3,IOT_E201,,Chennai
+2025-04-14 16:00:02,dev_4,AC_Unit,IOT_log,Sensor calibration needed,1,,,Delhi
+2025-04-01 06:53:02,dev_3,Server,IOT_log,Signal lost,3,IOT_E203,,Mumbai
+2025-04-08 01:14:02,dev_6,Server,ATM_log,Printer error,3,ATM_E002,,Delhi
+2025-04-14 04:13:02,dev_2,ATM,IOT_log,Battery low,1,IOT_E203,,Mumbai
+2025-04-04 18:54:02,dev_10,Server,Server_log,Memory leak suspected,4,,"CPU:87.15%, MEM:71.2%",Mumbai
+2025-04-18 19:06:02,dev_10,Server,IOT_log,Signal lost,1,IOT_E202,,Hyderabad
+2025-03-27 21:50:02,dev_10,ATM,Server_log,Disk failure warning,3,SRV_E101,"CPU:93.08%, MEM:67.48%",Bangalore
+2025-03-27 05:25:02,dev_8,AC_Unit,IOT_log,General log: stable,3,,,Mumbai
+2025-03-21 23:25:02,dev_6,Server,ATM_log,Printer error,2,ATM_E003,,Delhi
+2025-03-28 10:07:02,dev_3,ATM,Server_log,General log: system healthy,2,,"CPU:79.71%, MEM:77.02%",Delhi
+2025-04-13 23:55:02,dev_10,Server,ATM_log,Printer error,1,ATM_E002,,Delhi
+2025-03-27 17:00:02,dev_6,AC_Unit,IOT_log,Sensor calibration needed,3,,,Mumbai
+2025-03-28 22:29:02,dev_6,UPS,Server_log,Memory leak suspected,3,,"CPU:85.23%, MEM:69.7%",Hyderabad
+2025-03-28 16:53:02,dev_5,ATM,ATM_log,Printer error,2,ATM_E003,,Hyderabad
+2025-04-06 13:19:02,dev_7,UPS,Server_log,General log: system healthy,5,,"CPU:73.45%, MEM:84.42%",Chennai
+2025-04-16 03:25:02,dev_10,Server,Server_log,High CPU usage detected,2,,"CPU:78.66%, MEM:83.25%",Mumbai
+2025-04-10 18:55:02,dev_5,ATM,Server_log,Memory leak suspected,5,,"CPU:74.63%, MEM:79.25%",Hyderabad
+2025-04-13 20:11:02,dev_9,ATM,IOT_log,General log: stable,2,,,Bangalore
+2025-03-28 18:48:02,dev_3,UPS,ATM_log,Cash dispenser error,2,ATM_E001,,Mumbai
+2025-04-13 05:31:02,dev_9,AC_Unit,Server_log,Memory leak suspected,2,,"CPU:85.98%, MEM:62.07%",Bangalore
+2025-04-18 06:39:02,dev_9,UPS,ATM_log,Network timeout,1,,,Mumbai
+2025-04-06 16:57:02,dev_10,UPS,ATM_log,Cash dispenser error,1,ATM_E001,,Mumbai
+2025-03-30 10:10:02,dev_8,ATM,Server_log,Unexpected shutdown,5,,"CPU:80.1%, MEM:65.38%",Bangalore
+2025-03-21 21:59:02,dev_2,UPS,Server_log,Unexpected shutdown,4,,"CPU:71.9%, MEM:99.6%",Mumbai
+2025-04-14 05:13:02,dev_5,UPS,Server_log,Memory leak suspected,4,,"CPU:79.67%, MEM:92.39%",Chennai
+2025-04-01 18:06:02,dev_2,ATM,IOT_log,Intermittent connectivity,3,,,Bangalore
+2025-04-12 02:12:02,dev_7,UPS,IOT_log,Intermittent connectivity,3,,,Delhi
+2025-03-22 11:45:02,dev_5,ATM,IOT_log,Sensor calibration needed,3,,,Chennai
+2025-04-01 02:24:02,dev_10,Server,Server_log,Memory leak suspected,3,,"CPU:77.64%, MEM:87.26%",Hyderabad
+2025-04-13 13:07:02,dev_1,UPS,IOT_log,Intermittent connectivity,1,,,Hyderabad
+2025-03-23 23:06:02,dev_10,AC_Unit,IOT_log,Sensor calibration needed,1,,,Bangalore
+2025-04-07 01:50:02,dev_9,AC_Unit,IOT_log,Intermittent connectivity,1,,,Bangalore
+2025-03-24 20:36:02,dev_10,UPS,Server_log,Memory leak suspected,3,,"CPU:92.81%, MEM:83.83%",Hyderabad
+2025-04-01 00:38:02,dev_2,ATM,ATM_log,Network timeout,3,,,Delhi
+2025-03-22 07:19:02,dev_7,AC_Unit,IOT_log,Intermittent connectivity,3,,,Chennai
+2025-03-31 04:13:02,dev_3,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
+2025-03-28 20:50:02,dev_1,UPS,IOT_log,Battery low,1,IOT_E203,,Bangalore
+2025-04-04 10:18:02,dev_6,ATM,Server_log,Disk failure warning,4,SRV_E102,"CPU:84.15%, MEM:76.47%",Bangalore
+2025-03-22 20:32:02,dev_2,Server,Server_log,Unexpected shutdown,4,,"CPU:80.47%, MEM:97.18%",Mumbai
+2025-04-10 19:49:02,dev_10,ATM,Server_log,Memory leak suspected,5,,"CPU:94.92%, MEM:98.6%",Mumbai
+2025-03-27 03:27:02,dev_9,AC_Unit,IOT_log,Battery low,1,IOT_E202,,Hyderabad
+2025-03-28 02:50:02,dev_3,ATM,ATM_log,Card reader malfunction,1,ATM_E001,,Mumbai
+2025-04-18 05:12:02,dev_6,Server,Server_log,Unexpected shutdown,5,,"CPU:73.73%, MEM:89.23%",Bangalore
+2025-03-30 15:32:02,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:98.15%, MEM:67.25%",Bangalore
+2025-04-14 03:38:02,dev_9,AC_Unit,ATM_log,Network timeout,3,,,Bangalore
+2025-03-23 21:10:02,dev_5,ATM,ATM_log,Card reader malfunction,3,ATM_E001,,Chennai
+2025-03-23 11:34:02,dev_4,Server,IOT_log,Intermittent connectivity,3,,,Bangalore
+2025-04-18 22:15:02,dev_8,Server,IOT_log,Sensor calibration needed,1,,,Mumbai
+2025-04-10 23:24:02,dev_5,AC_Unit,Server_log,Disk failure warning,5,SRV_E102,"CPU:71.99%, MEM:89.64%",Chennai
+2025-04-13 04:56:02,dev_9,UPS,ATM_log,Cash dispenser error,3,ATM_E003,,Delhi
+2025-03-20 07:40:02,dev_10,AC_Unit,IOT_log,Sensor calibration needed,2,,,Bangalore
+2025-04-17 08:58:02,dev_6,AC_Unit,IOT_log,Signal lost,1,IOT_E201,,Bangalore
+2025-04-03 11:18:02,dev_1,UPS,IOT_log,Battery low,3,IOT_E201,,Bangalore
+2025-03-30 03:57:02,dev_5,UPS,Server_log,High CPU usage detected,3,,"CPU:87.23%, MEM:93.67%",Chennai
+2025-04-08 19:30:02,dev_4,UPS,IOT_log,Signal lost,1,IOT_E203,,Bangalore
+2025-03-22 02:04:02,dev_5,ATM,ATM_log,Network timeout,3,,,Chennai
+2025-03-25 01:27:02,dev_3,AC_Unit,ATM_log,Network timeout,1,,,Hyderabad
+2025-03-27 09:49:02,dev_6,AC_Unit,IOT_log,Signal lost,2,IOT_E201,,Bangalore
+2025-04-04 17:20:02,dev_10,ATM,ATM_log,General log: operation normal,1,,,Chennai
+2025-03-22 21:51:02,dev_9,AC_Unit,ATM_log,Card reader malfunction,1,ATM_E001,,Chennai
+2025-04-09 05:39:02,dev_8,Server,IOT_log,Battery low,1,IOT_E202,,Bangalore
+2025-04-08 23:04:02,dev_6,ATM,Server_log,Disk failure warning,3,SRV_E101,"CPU:74.19%, MEM:91.81%",Hyderabad
+2025-04-01 13:44:02,dev_2,Server,Server_log,Unexpected shutdown,5,,"CPU:76.05%, MEM:66.55%",Delhi
+2025-04-06 03:51:02,dev_1,ATM,ATM_log,Network timeout,1,,,Delhi
+2025-03-22 08:27:02,dev_9,Server,IOT_log,Sensor calibration needed,3,,,Hyderabad
+2025-03-27 12:01:02,dev_6,AC_Unit,ATM_log,Printer error,3,ATM_E003,,Mumbai
+2025-04-10 14:11:02,dev_1,AC_Unit,Server_log,General log: system healthy,4,,"CPU:74.93%, MEM:92.58%",Bangalore
+2025-04-05 22:07:02,dev_6,UPS,ATM_log,Card reader malfunction,2,ATM_E001,,Bangalore
+2025-04-12 11:29:02,dev_3,Server,IOT_log,General log: stable,1,,,Hyderabad
+2025-04-16 07:30:02,dev_1,UPS,IOT_log,General log: stable,1,,,Bangalore
+2025-03-31 17:33:02,dev_2,ATM,IOT_log,Sensor calibration needed,2,,,Hyderabad
+2025-04-05 07:08:02,dev_9,AC_Unit,IOT_log,Battery low,1,IOT_E203,,Chennai
+2025-03-28 23:15:02,dev_5,UPS,IOT_log,General log: stable,2,,,Hyderabad
+2025-03-30 23:31:02,dev_3,UPS,IOT_log,General log: stable,1,,,Hyderabad
+2025-04-10 15:25:02,dev_2,UPS,IOT_log,Battery low,2,IOT_E203,,Mumbai
+2025-04-13 07:30:02,dev_7,AC_Unit,ATM_log,General log: operation normal,2,,,Mumbai
+2025-03-21 12:31:02,dev_8,AC_Unit,ATM_log,Cash dispenser error,3,ATM_E001,,Mumbai
+2025-03-21 15:22:02,dev_10,UPS,ATM_log,General log: operation normal,1,,,Mumbai
+2025-03-26 20:09:02,dev_5,Server,Server_log,Disk failure warning,5,SRV_E101,"CPU:89.96%, MEM:80.92%",Chennai
+2025-04-16 13:20:02,dev_1,AC_Unit,IOT_log,Signal lost,2,IOT_E203,,Bangalore
+2025-04-16 15:21:02,dev_1,ATM,IOT_log,Battery low,2,IOT_E202,,Mumbai
+2025-03-22 04:36:02,dev_5,ATM,Server_log,Memory leak suspected,2,,"CPU:80.76%, MEM:95.09%",Bangalore
+2025-04-07 06:46:02,dev_5,UPS,Server_log,Memory leak suspected,2,,"CPU:81.77%, MEM:92.66%",Chennai
+2025-04-14 20:29:02,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:83.17%, MEM:75.08%",Hyderabad
+2025-03-25 00:32:02,dev_8,Server,Server_log,Disk failure warning,2,SRV_E103,"CPU:83.88%, MEM:72.06%",Delhi
+2025-03-21 19:18:02,dev_3,UPS,ATM_log,Printer error,2,ATM_E001,,Chennai
+2025-04-17 10:34:02,dev_6,ATM,IOT_log,General log: stable,3,,,Delhi
+2025-04-01 11:33:02,dev_6,ATM,IOT_log,Battery low,2,IOT_E202,,Chennai
+2025-03-28 21:34:02,dev_7,Server,IOT_log,Sensor calibration needed,1,,,Delhi
+2025-03-30 13:43:02,dev_8,UPS,ATM_log,Printer error,2,ATM_E001,,Mumbai
+2025-04-09 11:12:02,dev_9,Server,IOT_log,Intermittent connectivity,2,,,Delhi
+2025-03-24 12:10:02,dev_8,UPS,Server_log,High CPU usage detected,5,,"CPU:92.43%, MEM:80.11%",Delhi
+2025-04-05 09:08:02,dev_8,ATM,Server_log,Unexpected shutdown,2,,"CPU:76.97%, MEM:95.98%",Hyderabad
+2025-04-02 02:15:02,dev_2,AC_Unit,IOT_log,Battery low,3,IOT_E203,,Delhi
+2025-04-05 08:52:02,dev_1,Server,Server_log,General log: system healthy,5,,"CPU:81.52%, MEM:81.74%",Chennai
+2025-03-27 21:52:02,dev_8,ATM,IOT_log,Battery low,1,IOT_E202,,Hyderabad
+2025-04-07 22:24:02,dev_5,AC_Unit,ATM_log,Card reader malfunction,2,ATM_E001,,Hyderabad
+2025-03-23 20:28:02,dev_7,ATM,IOT_log,Battery low,1,IOT_E201,,Bangalore
+2025-03-21 07:02:02,dev_8,Server,ATM_log,Printer error,1,ATM_E003,,Bangalore
+2025-03-23 21:38:02,dev_2,UPS,IOT_log,General log: stable,3,,,Chennai
+2025-04-15 04:15:02,dev_9,ATM,Server_log,General log: system healthy,5,,"CPU:97.19%, MEM:84.97%",Delhi
+2025-03-21 02:26:02,dev_3,Server,ATM_log,Printer error,3,ATM_E003,,Mumbai
+2025-03-31 08:43:02,dev_7,UPS,IOT_log,Battery low,2,IOT_E202,,Delhi
+2025-03-20 08:57:02,dev_8,Server,Server_log,General log: system healthy,4,,"CPU:73.51%, MEM:97.59%",Mumbai
+2025-03-23 20:40:02,dev_6,Server,ATM_log,General log: operation normal,3,,,Mumbai
+2025-04-09 21:53:02,dev_3,Server,IOT_log,Signal lost,3,IOT_E201,,Delhi
+2025-03-26 07:40:02,dev_8,UPS,Server_log,Unexpected shutdown,2,,"CPU:88.83%, MEM:73.4%",Delhi
+2025-04-03 16:14:02,dev_7,Server,IOT_log,Sensor calibration needed,1,,,Hyderabad
+2025-04-11 13:57:02,dev_5,Server,IOT_log,Signal lost,1,IOT_E203,,Hyderabad
+2025-04-18 07:23:02,dev_8,ATM,IOT_log,General log: stable,1,,,Delhi
+2025-03-26 22:40:02,dev_7,Server,IOT_log,Signal lost,3,IOT_E203,,Delhi
+2025-04-18 06:51:02,dev_7,AC_Unit,ATM_log,Cash dispenser error,3,ATM_E002,,Delhi
+2025-04-12 23:20:02,dev_8,Server,IOT_log,General log: stable,3,,,Bangalore
+2025-03-31 12:26:02,dev_4,AC_Unit,ATM_log,Cash dispenser error,1,ATM_E001,,Chennai
+2025-03-27 03:08:02,dev_7,ATM,Server_log,General log: system healthy,4,,"CPU:74.18%, MEM:91.76%",Chennai
+2025-04-15 13:38:02,dev_5,ATM,Server_log,Memory leak suspected,2,,"CPU:88.6%, MEM:81.34%",Bangalore
+2025-04-15 08:37:02,dev_1,AC_Unit,IOT_log,General log: stable,2,,,Chennai
+2025-04-16 20:55:02,dev_9,Server,IOT_log,Sensor calibration needed,3,,,Mumbai
+2025-04-14 05:41:02,dev_9,UPS,Server_log,Memory leak suspected,3,,"CPU:96.82%, MEM:91.54%",Hyderabad
+2025-03-29 08:54:02,dev_6,AC_Unit,IOT_log,General log: stable,2,,,Mumbai
+2025-04-01 23:15:02,dev_2,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
+2025-04-12 17:32:02,dev_6,UPS,Server_log,Disk failure warning,4,SRV_E101,"CPU:74.55%, MEM:72.47%",Hyderabad
+2025-03-21 02:23:02,dev_6,UPS,ATM_log,Network timeout,3,,,Chennai
+2025-04-13 08:43:02,dev_2,ATM,IOT_log,General log: stable,1,,,Mumbai
+2025-03-30 17:02:02,dev_4,UPS,ATM_log,General log: operation normal,3,,,Hyderabad
+2025-03-21 19:26:02,dev_7,ATM,ATM_log,Printer error,3,ATM_E002,,Mumbai
+2025-04-18 17:11:02,dev_1,Server,IOT_log,Sensor calibration needed,3,,,Bangalore
+2025-03-24 11:17:02,dev_5,UPS,Server_log,Unexpected shutdown,5,,"CPU:77.45%, MEM:89.76%",Chennai
+2025-04-09 18:51:02,dev_2,ATM,ATM_log,General log: operation normal,1,,,Delhi
+2025-03-28 16:53:02,dev_9,ATM,IOT_log,Signal lost,3,IOT_E201,,Bangalore
+2025-04-10 04:51:02,dev_7,ATM,ATM_log,General log: operation normal,1,,,Chennai
+2025-04-14 19:50:02,dev_9,AC_Unit,Server_log,Disk failure warning,2,SRV_E103,"CPU:71.01%, MEM:82.8%",Mumbai
+2025-03-23 02:06:02,dev_2,ATM,IOT_log,General log: stable,2,,,Hyderabad
+2025-04-02 02:10:02,dev_5,Server,ATM_log,Printer error,3,ATM_E003,,Bangalore
+2025-04-15 14:04:02,dev_4,AC_Unit,ATM_log,Card reader malfunction,3,ATM_E003,,Mumbai
+2025-03-23 17:21:02,dev_9,UPS,ATM_log,Network timeout,3,,,Delhi
+2025-04-17 11:09:02,dev_4,UPS,Server_log,Memory leak suspected,3,,"CPU:92.87%, MEM:95.07%",Bangalore
+2025-04-16 09:36:02,dev_2,Server,Server_log,Unexpected shutdown,4,,"CPU:80.26%, MEM:92.85%",Bangalore
+2025-03-30 21:56:02,dev_10,Server,IOT_log,Signal lost,2,IOT_E202,,Delhi
+2025-04-14 18:55:02,dev_4,Server,Server_log,Disk failure warning,3,SRV_E103,"CPU:73.32%, MEM:93.86%",Chennai
+2025-03-27 08:19:02,dev_8,UPS,Server_log,Disk failure warning,5,SRV_E103,"CPU:73.82%, MEM:75.89%",Chennai
+2025-04-16 13:34:02,dev_10,ATM,ATM_log,General log: operation normal,1,,,Bangalore
+2025-04-10 19:19:02,dev_2,ATM,IOT_log,Sensor calibration needed,3,,,Hyderabad
+2025-04-01 06:26:02,dev_10,Server,IOT_log,Signal lost,3,IOT_E203,,Hyderabad
+2025-04-03 22:26:02,dev_3,AC_Unit,ATM_log,General log: operation normal,3,,,Chennai
+2025-03-23 10:07:02,dev_8,ATM,Server_log,General log: system healthy,2,,"CPU:93.92%, MEM:66.0%",Chennai
+2025-03-29 11:21:02,dev_10,Server,ATM_log,Printer error,1,ATM_E001,,Delhi
+2025-04-01 00:33:02,dev_3,UPS,ATM_log,Card reader malfunction,2,ATM_E001,,Bangalore
+2025-04-17 10:52:02,dev_4,ATM,IOT_log,Signal lost,2,IOT_E202,,Mumbai
+2025-03-21 04:19:02,dev_1,ATM,ATM_log,General log: operation normal,3,,,Bangalore
+2025-03-24 10:22:02,dev_5,Server,IOT_log,Intermittent connectivity,2,,,Chennai
+2025-03-31 22:18:02,dev_2,AC_Unit,ATM_log,General log: operation normal,2,,,Chennai
+2025-04-08 07:44:02,dev_8,ATM,ATM_log,Printer error,1,ATM_E001,,Delhi
+2025-04-17 02:34:02,dev_5,Server,ATM_log,Card reader malfunction,2,ATM_E003,,Mumbai
+2025-03-28 15:33:02,dev_4,UPS,IOT_log,Sensor calibration needed,2,,,Bangalore
+2025-03-29 03:45:02,dev_4,Server,ATM_log,Card reader malfunction,1,ATM_E001,,Chennai
+2025-04-01 01:05:02,dev_3,ATM,ATM_log,Cash dispenser error,1,ATM_E002,,Delhi
+2025-03-21 13:42:02,dev_7,ATM,ATM_log,Card reader malfunction,2,ATM_E003,,Bangalore
+2025-04-04 04:05:02,dev_4,UPS,ATM_log,General log: operation normal,1,,,Delhi
+2025-03-30 21:43:02,dev_5,Server,Server_log,General log: system healthy,2,,"CPU:76.88%, MEM:88.89%",Bangalore
+2025-04-12 06:51:02,dev_3,ATM,ATM_log,General log: operation normal,3,,,Hyderabad
+2025-03-29 05:23:02,dev_3,ATM,Server_log,General log: system healthy,2,,"CPU:91.6%, MEM:85.65%",Mumbai
+2025-03-22 01:43:02,dev_2,ATM,IOT_log,Battery low,3,IOT_E203,,Chennai
+2025-03-24 18:18:02,dev_7,UPS,ATM_log,General log: operation normal,2,,,Bangalore
+2025-04-12 03:25:02,dev_7,AC_Unit,IOT_log,General log: stable,1,,,Delhi
+2025-04-06 14:59:02,dev_8,Server,Server_log,General log: system healthy,5,,"CPU:90.82%, MEM:81.71%",Hyderabad
+2025-04-11 13:15:02,dev_1,ATM,ATM_log,Printer error,3,ATM_E001,,Delhi
+2025-03-28 08:49:02,dev_6,ATM,Server_log,General log: system healthy,4,,"CPU:77.55%, MEM:73.83%",Mumbai
