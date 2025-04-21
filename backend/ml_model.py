@@ -176,7 +176,13 @@ class PredictiveMaintenanceModel:
         scaler_path = os.path.join(self.MODELS_DIR, 'scaler.joblib')
         
         if os.path.exists(model_path) and os.path.exists(scaler_path):
-            self.model = tf.keras.models.load_model(model_path)
+            # Load model with custom_objects to handle compatibility issues
+            self.model = tf.keras.models.load_model(
+                model_path,
+                custom_objects={
+                    'LSTM': lambda *args, **kwargs: tf.keras.layers.LSTM(*args, **{k: v for k, v in kwargs.items() if k != 'time_major'})
+                }
+            )
             self.scaler = joblib.load(scaler_path)
             return True
         return False

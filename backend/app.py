@@ -11,6 +11,8 @@ import uuid
 import random
 from enum import Enum
 from fastapi_utils.tasks import repeat_every
+from fastapi.responses import Response
+from dateutil.parser import parse
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -202,6 +204,11 @@ def init_mock_data():
                 "temperature": 22.5,
                 "humidity": 45.0,
                 "power": 5.2
+            },
+            "metrics": {
+                "mtbf": 720,  # 30 days in hours
+                "mttr": 4,    # 4 hours
+                "oee": 0.95   # 95%
             }
         },
         "device_2": {
@@ -215,6 +222,11 @@ def init_mock_data():
                 "voltage": 220.0,
                 "current": 15.0,
                 "temperature": 35.0
+            },
+            "metrics": {
+                "mtbf": 840,  # 35 days in hours
+                "mttr": 6,    # 6 hours
+                "oee": 0.92   # 92%
             }
         },
         "device_3": {
@@ -228,6 +240,11 @@ def init_mock_data():
                 "temperature": 28.0,
                 "packet_loss": 0.1,
                 "bandwidth": 850.0
+            },
+            "metrics": {
+                "mtbf": 960,  # 40 days in hours
+                "mttr": 2,    # 2 hours
+                "oee": 0.98   # 98%
             }
         },
         "device_4": {
@@ -241,6 +258,11 @@ def init_mock_data():
                 "fuel_level": 95.0,
                 "temperature": 30.0,
                 "oil_pressure": 40.0
+            },
+            "metrics": {
+                "mtbf": 1200,  # 50 days in hours
+                "mttr": 8,     # 8 hours
+                "oee": 0.90    # 90%
             }
         },
         "device_5": {
@@ -254,6 +276,11 @@ def init_mock_data():
                 "temperature": 25.0,
                 "disk_usage": 68.0,
                 "read_latency": 2.5
+            },
+            "metrics": {
+                "mtbf": 1080,  # 45 days in hours
+                "mttr": 3,     # 3 hours
+                "oee": 0.96    # 96%
             }
         }
     }
@@ -618,6 +645,448 @@ async def get_device_sensor_data(device_id: str):
     # Generate sensor history for the specific device
     device_sensor_data = generate_sensor_history(device_id=device_id)
     return device_sensor_data.get(device_id, [])
+
+@app.get("/dashboard/kpis")
+async def get_kpis():
+    """Get high-level KPIs for the dashboard"""
+    try:
+        # Calculate KPIs from device data
+        total_devices = len(devices)
+        total_operational = sum(1 for d in devices.values() if d["status"] == "operational")
+        total_warning = sum(1 for d in devices.values() if d["status"] == "warning")
+        total_critical = sum(1 for d in devices.values() if d["status"] == "critical")
+        
+        # Calculate MTBF (Mean Time Between Failures)
+        mtbf_values = [d.get("metrics", {}).get("mtbf", 0) for d in devices.values()]
+        mtbf = sum(mtbf_values) / len(mtbf_values) if mtbf_values else 0
+        
+        # Calculate MTTR (Mean Time To Repair)
+        mttr_values = [d.get("metrics", {}).get("mttr", 0) for d in devices.values()]
+        mttr = sum(mttr_values) / len(mttr_values) if mttr_values else 0
+        
+        # Calculate OEE (Overall Equipment Effectiveness)
+        oee_values = [d.get("metrics", {}).get("oee", 0) for d in devices.values()]
+        oee = sum(oee_values) / len(oee_values) if oee_values else 0
+        
+        # Calculate predictive ratio
+        total_failures = len(failures)
+        total_predictive = sum(1 for f in failures if f.get("type") == "predictive")
+        predictive_ratio = total_predictive / total_failures if total_failures > 0 else 0
+        
+        return {
+            "mtbf": mtbf,
+            "mttr": mttr,
+            "oee": oee,
+            "predictive_ratio": predictive_ratio,
+            "device_stats": {
+                "total": total_devices,
+                "operational": total_operational,
+                "warning": total_warning,
+                "critical": total_critical
+            }
+        }
+    except Exception as e:
+        print(f"Error in get_kpis: {str(e)}")  # Add logging for debugging
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to calculate KPIs. Please ensure all devices have required metrics."
+        )
+
+@app.get("/dashboard/predictions")
+async def get_predictions():
+    """Get list of predicted failures"""
+    try:
+        predictions = []
+        for device_id, device_data in devices.items():
+            # Only generate predictions for devices with sensor data
+            if device_id in sensor_history and len(sensor_history[device_id]) > 0:
+                recent_data = sensor_history[device_id][-10:]  # Get last 10 readings
+                
+                # Extract sensor values from the data
+                sensor_values = []
+                for reading in recent_data:
+                    if isinstance(reading, dict) and 'sensors' in reading:
+                        sensor_values.append(reading['sensors'])
+                    else:
+                        # If no sensor data, use default values
+                        sensor_values.append({
+                            'temperature': random.uniform(20, 30),
+                            'humidity': random.uniform(40, 60),
+                            'vibration': random.uniform(0, 5)
+                        })
+                
+                # Make prediction using the model
+                try:
+                    prediction = model.predict(pd.DataFrame(sensor_values), [])[0]
+                except Exception as e:
+                    print(f"Error making prediction for device {device_id}: {str(e)}")
+                    prediction = random.uniform(0, 1)  # Fallback to random prediction
+                
+                # Calculate time to failure based on prediction
+                time_to_failure = int((1 - prediction) * 30)  # Days until failure
+                
+                # Determine effects based on device type
+                effects = []
+                if device_data["type"].lower() == "hvac":
+                    effects = ["Temperature regulation", "Humidity control", "Air quality"]
+                elif device_data["type"].lower() == "power":
+                    effects = ["Power supply", "Voltage stability", "Current regulation"]
+                elif device_data["type"].lower() == "network":
+                    effects = ["Network connectivity", "Data transfer", "Communication"]
+                elif device_data["type"].lower() == "storage":
+                    effects = ["Data access", "Storage capacity", "Read/write operations"]
+                
+                predictions.append({
+                    "id": str(uuid.uuid4()),
+                    "device_id": device_id,
+                    "device_name": device_data["name"],
+                    "prediction_time": datetime.now().isoformat(),
+                    "failure_time": (datetime.now() + timedelta(days=time_to_failure)).isoformat(),
+                    "location": device_data["location"],
+                    "severity": prediction,
+                    "risk_score": prediction * 100,
+                    "component": device_data["type"],
+                    "confidence": random.uniform(0.7, 0.95),
+                    "effects": effects,
+                    "time_since_prediction": 0  # Will be calculated on the frontend
+                })
+        
+        return predictions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dashboard/environmental")
+async def get_environmental_alerts():
+    """Get environmental and unexpected issues"""
+    try:
+        alerts = []
+        
+        # Check for weather-related issues
+        if random.random() < 0.3:  # 30% chance of weather alert
+            alerts.append({
+                "id": str(uuid.uuid4()),
+                "type": "weather",
+                "severity": random.choice(["low", "medium", "high", "critical"]),
+                "start_time": datetime.now().isoformat(),
+                "end_time": (datetime.now() + timedelta(hours=2)).isoformat(),
+                "impact": ["Temperature", "Humidity", "Air pressure"],
+                "description": "Weather conditions may affect equipment performance",
+                "affected_devices": random.sample(list(devices.keys()), min(3, len(devices)))
+            })
+        
+        # Check for power-related issues
+        if random.random() < 0.2:  # 20% chance of power alert
+            alerts.append({
+                "id": str(uuid.uuid4()),
+                "type": "power",
+                "severity": random.choice(["low", "medium", "high", "critical"]),
+                "start_time": datetime.now().isoformat(),
+                "end_time": (datetime.now() + timedelta(hours=1)).isoformat(),
+                "impact": ["Power supply", "Voltage stability"],
+                "description": "Power fluctuations detected",
+                "affected_devices": random.sample(list(devices.keys()), min(2, len(devices)))
+            })
+        
+        # Check for sensor issues
+        for device_id, device_data in devices.items():
+            if device_id in sensor_history and len(sensor_history[device_id]) > 0:
+                recent_data = sensor_history[device_id][-5:]  # Check last 5 readings
+                if any(reading.get("sensor_error", False) for reading in recent_data):
+                    alerts.append({
+                        "id": str(uuid.uuid4()),
+                        "type": "sensor",
+                        "severity": "high",
+                        "start_time": datetime.now().isoformat(),
+                        "end_time": None,  # Will be set when resolved
+                        "impact": ["Data collection", "Monitoring"],
+                        "description": f"Sensor issues detected for {device_data['name']}",
+                        "affected_devices": [device_id]
+                    })
+        
+        return alerts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dashboard/sensor-health")
+async def get_sensor_health():
+    """Get sensor health status and calibration information"""
+    try:
+        sensors = []
+        for device_id, device_data in devices.items():
+            if device_id in sensor_history:
+                # Get sensor types from the device data
+                sensor_types = list(device_data.get("sensors", {}).keys())
+                
+                for sensor_type in sensor_types:
+                    # Generate mock calibration dates
+                    last_calibration = datetime.now() - timedelta(days=random.randint(1, 90))
+                    next_calibration = last_calibration + timedelta(days=90)
+                    
+                    # Check for data gaps
+                    data_gaps = []
+                    if random.random() < 0.3:  # 30% chance of having data gaps
+                        num_gaps = random.randint(1, 3)
+                        for _ in range(num_gaps):
+                            start = datetime.now() - timedelta(hours=random.randint(1, 24))
+                            end = start + timedelta(minutes=random.randint(5, 60))
+                            data_gaps.append({
+                                "start": start.isoformat(),
+                                "end": end.isoformat()
+                            })
+                    
+                    # Determine sensor status
+                    status = "healthy"
+                    if len(data_gaps) > 0:
+                        status = "warning"
+                    if random.random() < 0.1:  # 10% chance of critical status
+                        status = "critical"
+                    
+                    sensors.append({
+                        "device_id": device_id,
+                        "sensor_type": sensor_type,
+                        "status": status,
+                        "last_calibration": last_calibration.isoformat(),
+                        "next_calibration": next_calibration.isoformat(),
+                        "data_gaps": data_gaps
+                    })
+        
+        return sensors
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/dashboard/export")
+async def export_data(
+    device: Optional[str] = None,
+    location: Optional[str] = None,
+    severity: Optional[str] = None,
+    date_range: Optional[str] = None
+):
+    """Export filtered dashboard data"""
+    try:
+        # Get all relevant data
+        kpis = await get_kpis()
+        predictions = await get_predictions()
+        environmental = await get_environmental_alerts()
+        sensor_health = await get_sensor_health()
+        
+        # Apply filters
+        if device and device != "all":
+            predictions = [p for p in predictions if p["device_id"] == device]
+            environmental = [e for e in environmental if device in e["affected_devices"]]
+            sensor_health = [s for s in sensor_health if s["device_id"] == device]
+        
+        if location and location != "all":
+            predictions = [p for p in predictions if p["location"] == location]
+            devices_in_location = [d for d in devices.values() if d["location"] == location]
+            device_ids = [d["id"] for d in devices_in_location]
+            environmental = [e for e in environmental if any(d in e["affected_devices"] for d in device_ids)]
+            sensor_health = [s for s in sensor_health if s["device_id"] in device_ids]
+        
+        if severity and severity != "all":
+            predictions = [p for p in predictions if p["severity"] == severity]
+            environmental = [e for e in environmental if e["severity"] == severity]
+        
+        if date_range:
+            days = int(date_range[:-1])  # Remove 'd' from '7d'
+            cutoff_date = datetime.now() - timedelta(days=days)
+            predictions = [p for p in predictions if parse(p["prediction_time"]) >= cutoff_date]
+            environmental = [e for e in environmental if parse(e["start_time"]) >= cutoff_date]
+        
+        # Prepare CSV data
+        csv_data = []
+        
+        # Add KPIs
+        csv_data.append(["KPIs"])
+        csv_data.append(["Metric", "Value"])
+        csv_data.append(["MTBF (hrs)", kpis["mtbf"]])
+        csv_data.append(["MTTR (hrs)", kpis["mttr"]])
+        csv_data.append(["OEE (%)", kpis["oee"] * 100])
+        csv_data.append(["Predictive Ratio (%)", kpis["predictive_ratio"] * 100])
+        csv_data.append([])
+        
+        # Add predictions
+        csv_data.append(["Predicted Failures"])
+        csv_data.append(["Device", "Prediction Time", "Failure Time", "Location", "Severity", "Risk Score", "Effects"])
+        for p in predictions:
+            csv_data.append([
+                p["device_name"],
+                p["prediction_time"],
+                p["failure_time"],
+                p["location"],
+                p["severity"],
+                p["risk_score"],
+                ", ".join(p["effects"])
+            ])
+        csv_data.append([])
+        
+        # Add environmental alerts
+        csv_data.append(["Environmental Alerts"])
+        csv_data.append(["Type", "Severity", "Start Time", "End Time", "Description", "Affected Devices"])
+        for e in environmental:
+            csv_data.append([
+                e["type"],
+                e["severity"],
+                e["start_time"],
+                e["end_time"] or "Ongoing",
+                e["description"],
+                ", ".join(e["affected_devices"])
+            ])
+        csv_data.append([])
+        
+        # Add sensor health
+        csv_data.append(["Sensor Health"])
+        csv_data.append(["Device", "Sensor Type", "Status", "Last Calibration", "Next Calibration", "Data Gaps"])
+        for s in sensor_health:
+            csv_data.append([
+                devices[s["device_id"]]["name"],
+                s["sensor_type"],
+                s["status"],
+                s["last_calibration"],
+                s["next_calibration"],
+                len(s["data_gaps"])
+            ])
+        
+        # Convert to CSV string
+        csv_string = "\n".join([",".join(map(str, row)) for row in csv_data])
+        
+        return Response(
+            content=csv_string,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=dashboard_export.csv"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dashboard/maintenance-recommendations")
+async def get_maintenance_recommendations():
+    """Get maintenance recommendations for devices"""
+    try:
+        recommendations = []
+        for device_id, device_data in devices.items():
+            # Generate recommendations based on device type and status
+            if device_data["status"] in ["warning", "critical"]:
+                # Get recent sensor data
+                recent_data = sensor_history.get(device_id, [])[-5:]
+                
+                # Generate maintenance action based on device type and sensor data
+                action = ""
+                priority = ""
+                resources = []
+                estimated_duration = 0
+                
+                if device_data["type"].lower() == "hvac":
+                    if any(r.get("temperature", 0) > 75 for r in recent_data):
+                        action = "Check and clean cooling system components"
+                        priority = "high"
+                        resources = ["HVAC technician", "Cleaning supplies", "Replacement filters"]
+                        estimated_duration = 2
+                elif device_data["type"].lower() == "power":
+                    if any(r.get("voltage", 0) > 240 for r in recent_data):
+                        action = "Inspect power supply unit and connections"
+                        priority = "critical"
+                        resources = ["Electrician", "Voltage meter", "Spare parts"]
+                        estimated_duration = 3
+                elif device_data["type"].lower() == "network":
+                    if any(r.get("packet_loss", 0) > 5 for r in recent_data):
+                        action = "Check network interfaces and cables"
+                        priority = "medium"
+                        resources = ["Network technician", "Cable tester", "Spare cables"]
+                        estimated_duration = 1
+                elif device_data["type"].lower() == "storage":
+                    if any(r.get("disk_usage", 0) > 90 for r in recent_data):
+                        action = "Perform disk cleanup and health check"
+                        priority = "high"
+                        resources = ["System admin", "Disk diagnostic tools"]
+                        estimated_duration = 4
+                
+                if action:  # Only add if we have a specific recommendation
+                    recommendations.append({
+                        "id": str(uuid.uuid4()),
+                        "device_id": device_id,
+                        "device_name": device_data["name"],
+                        "action": action,
+                        "priority": priority,
+                        "estimated_duration": estimated_duration,
+                        "required_resources": resources,
+                        "status": "pending",
+                        "created_at": datetime.now().isoformat()
+                    })
+        
+        return recommendations
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dashboard/root-causes")
+async def get_root_causes():
+    """Get root cause analysis data"""
+    try:
+        # Analyze failures and generate root cause data
+        root_causes = [
+            {
+                "id": str(uuid.uuid4()),
+                "cause": "Wear and Tear",
+                "count": random.randint(5, 15),
+                "severity": "medium",
+                "affected_components": ["Cooling Fan", "Power Supply", "Storage Disk"],
+                "prevention_steps": [
+                    "Regular maintenance checks",
+                    "Component replacement schedule",
+                    "Usage monitoring"
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "cause": "Environmental Stress",
+                "count": random.randint(3, 8),
+                "severity": "high",
+                "affected_components": ["Temperature Sensors", "Humidity Sensors"],
+                "prevention_steps": [
+                    "Improve cooling system",
+                    "Regular environment monitoring",
+                    "Install protective measures"
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "cause": "Operational Overload",
+                "count": random.randint(4, 10),
+                "severity": "critical",
+                "affected_components": ["CPU", "Memory", "Network Card"],
+                "prevention_steps": [
+                    "Load balancing",
+                    "Capacity planning",
+                    "Performance monitoring"
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "cause": "Power Issues",
+                "count": random.randint(2, 6),
+                "severity": "high",
+                "affected_components": ["Power Supply", "Voltage Regulator"],
+                "prevention_steps": [
+                    "UPS installation",
+                    "Power quality monitoring",
+                    "Electrical system maintenance"
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "cause": "Software Configuration",
+                "count": random.randint(3, 7),
+                "severity": "medium",
+                "affected_components": ["Operating System", "Device Drivers"],
+                "prevention_steps": [
+                    "Regular updates",
+                    "Configuration backups",
+                    "Change management"
+                ]
+            }
+        ]
+        
+        return root_causes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

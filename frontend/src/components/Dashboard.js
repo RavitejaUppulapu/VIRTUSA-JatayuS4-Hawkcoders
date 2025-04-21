@@ -6,6 +6,40 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  IconButton,
+  Tooltip,
+  Tab,
+  Tabs,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Stack,
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  TextField,
+  LinearProgress,
+  ToggleButton,
+  ToggleButtonGroup,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   LineChart,
@@ -13,11 +47,58 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
 } from "recharts";
+import {
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+  Build as BuildIcon,
+  Timeline as TimelineIcon,
+  Notifications as NotificationsIcon,
+  FilterList as FilterListIcon,
+  Search as SearchIcon,
+  Assessment as AssessmentIcon,
+  ExpandMore as ExpandMoreIcon,
+  TrendingUp as TrendingUpIcon,
+  Speed as SpeedIcon,
+  DeviceHub as DeviceHubIcon,
+  Download as DownloadIcon,
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+} from "@mui/icons-material";
 import axios from "axios";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
+const SEVERITY_COLORS = {
+  critical: "#dc3545",
+  high: "#ff9800",
+  medium: "#ffd700",
+  low: "#4caf50",
+  warning: "#ff9800",
+  info: "#0288d1",
+};
+
+const SEVERITY_LEVELS = {
+  critical: 4,
+  high: 3,
+  warning: 2,
+  medium: 2,
+  info: 1,
+  low: 1,
+};
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -25,50 +106,327 @@ const Dashboard = () => {
   const [devices, setDevices] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [sensorData, setSensorData] = useState([]);
+  const [predictedFailures, setPredictedFailures] = useState([]);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [maintenanceRecommendations, setMaintenanceRecommendations] = useState(
+    []
+  );
+  const [selectedFailure, setSelectedFailure] = useState(null);
+  const [environmentalAlerts, setEnvironmentalAlerts] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  useEffect(() => {
+  // New state variables for filtering and statistics
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [componentFilter, setComponentFilter] = useState("all");
+  const [statistics, setStatistics] = useState({
+    totalPredictions: 0,
+    criticalIssues: 0,
+    plannedMaintenance: 0,
+    resolvedIssues: 0,
+  });
+
+  // New state variables for enhanced features
+  const [viewMode, setViewMode] = useState("list");
+  const [trendData, setTrendData] = useState([]);
+  const [deviceHealth, setDeviceHealth] = useState([]);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState("csv");
+  const [selectedDateRange, setSelectedDateRange] = useState("7d");
+
+  const navigate = useNavigate();
+
     const fetchData = async () => {
       try {
-        const [devicesRes, alertsRes, sensorRes] = await Promise.all([
-          axios.get("http://localhost:8000/devices"),
-          axios.get("http://localhost:8000/alerts"),
-          axios.get("http://localhost:8000/sensor-data"),
-        ]);
+      console.log("Fetching data from:", API_BASE_URL);
 
-        setDevices(devicesRes.data);
-        setAlerts(alertsRes.data);
+      // Test endpoint first
+      try {
+        const testResponse = await axios.get(`${API_BASE_URL}/`);
+        console.log("API connection test successful:", testResponse.data);
+      } catch (error) {
+        console.error("API connection test failed:", error);
+        throw new Error("Could not connect to API server");
+      }
 
-        // Transform sensor data for the chart
-        const transformedData = [];
-        const sensorHistory = sensorRes.data;
+      // Fetch devices first to check data endpoints
+      const devicesRes = await axios.get(`${API_BASE_URL}/devices`);
+      console.log("Devices data:", devicesRes.data);
 
-        // Get the latest 10 readings from each device
-        Object.values(sensorHistory).forEach((deviceData) => {
-          deviceData.slice(-10).forEach((reading) => {
-            // Ensure all sensor values are numbers with default value of 0
-            transformedData.push({
-              timestamp: reading.timestamp,
+      // Get the first device ID for sensor data
+      const firstDeviceId = devicesRes.data[0]?.id || "";
+
+      // Then fetch the rest of the data
+      const [
+        alertsRes,
+        sensorRes,
+        predictionsRes,
+        maintenanceRes,
+        environmentalRes,
+      ] = await Promise.all([
+        axios.get(`${API_BASE_URL}/alerts`),
+        axios.get(`${API_BASE_URL}/sensor-data/${firstDeviceId}`),
+        axios.get(`${API_BASE_URL}/dashboard/predictions`),
+        axios.get(`${API_BASE_URL}/dashboard/maintenance-recommendations`),
+        axios.get(`${API_BASE_URL}/dashboard/environmental`),
+      ]);
+
+      console.log("Alerts data:", alertsRes.data);
+      console.log("Sensor data:", sensorRes.data);
+      console.log("Predictions data:", predictionsRes.data);
+      console.log("Maintenance data:", maintenanceRes.data);
+      console.log("Environmental data:", environmentalRes.data);
+
+      // Process alerts data - combine system and environmental alerts
+      const processedAlerts = [
+        ...(alertsRes.data || []).map((alert) => ({
+          id: alert.id || Math.random().toString(36).substr(2, 9),
+          type: alert.type || "system",
+          severity: alert.severity || "low",
+          message: alert.message || "No message available",
+          timestamp: alert.timestamp || new Date().toISOString(),
+          device_id: alert.device_id || "",
+          device_name:
+            alert.device_name ||
+            getDeviceName(alert.device_id, devicesRes.data),
+          alert_type: alert.alert_type || "system",
+          status: alert.status || "unresolved",
+          component: alert.component || "Unknown",
+          location:
+            alert.location ||
+            getDeviceLocation(alert.device_id, devicesRes.data),
+        })),
+        ...(environmentalRes.data || []).map((alert) => ({
+          id: alert.id || Math.random().toString(36).substr(2, 9),
+          type: "environmental",
+          severity: alert.severity || "warning",
+          message: alert.description || "No message available",
+          timestamp: alert.start_time || new Date().toISOString(),
+          device_id: alert.affected_devices?.[0] || "",
+          device_name: getDeviceName(
+            alert.affected_devices?.[0],
+            devicesRes.data
+          ),
+          alert_type: "environmental",
+          status: "unresolved",
+          component: alert.type || "Environmental",
+          location: getDeviceLocation(
+            alert.affected_devices?.[0],
+            devicesRes.data
+          ),
+          affected_devices: alert.affected_devices || [],
+        })),
+      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Process predictions with alert information
+      const processedPredictions = (predictionsRes.data || []).map(
+        (prediction) => ({
+          id: prediction.id || Math.random().toString(36).substr(2, 9),
+          device_id: prediction.device_id || "",
+          device_name:
+            prediction.device_name ||
+            getDeviceName(prediction.device_id, devicesRes.data),
+          component: prediction.component || "Unknown Component",
+          failure_reason: prediction.failure_reason || "Unknown Failure",
+          risk_score: Number(prediction.risk_score) || 0,
+          confidence: Number(prediction.confidence) || 0.7,
+          failure_time:
+            prediction.failure_time ||
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          prediction_time:
+            prediction.prediction_time || new Date().toISOString(),
+          location:
+            prediction.location ||
+            getDeviceLocation(prediction.device_id, devicesRes.data),
+          system_type: prediction.system_type || "Unknown System",
+          failure_description:
+            prediction.failure_description || "No description available",
+          severity: getSeverityFromRiskScore(prediction.risk_score),
+          status: "unresolved",
+        })
+      );
+
+      // Process devices data
+      const processedDevices = (devicesRes.data || []).map((device) => ({
+        id: device.id || Math.random().toString(36).substr(2, 9),
+        name: device.name || "Unknown Device",
+        status: device.status || "unknown",
+        type: device.type || "unknown",
+        location: device.location || "Unknown Location",
+      }));
+
+      // Process sensor data
+      const processedSensorData = (sensorRes.data || []).map((reading) => ({
+        timestamp: reading.timestamp || new Date().toISOString(),
+        device_id: reading.device_id || "",
               temperature: Number(reading.temperature) || 0,
               humidity: Number(reading.humidity) || 0,
               vibration: Number(reading.vibration) || 0,
-            });
-          });
-        });
+        pressure: Number(reading.pressure) || 0,
+      }));
 
-        // Sort by timestamp and take only the last 15 readings
-        transformedData.sort(
-          (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-        );
-        setSensorData(transformedData.slice(-15));
+      // Process maintenance recommendations
+      const processedMaintenance = (maintenanceRes.data || []).map((rec) => ({
+        id: rec.id || Math.random().toString(36).substr(2, 9),
+        device_id: rec.device_id || "",
+        device_name: rec.device_name || "Unknown Device",
+        action: rec.action || "No action specified",
+        priority: rec.priority || "medium",
+        estimated_duration: Number(rec.estimated_duration) || 0,
+        required_resources: rec.required_resources || [],
+        status: rec.status || "pending",
+        created_at: rec.created_at || new Date().toISOString(),
+      }));
+
+      setDevices(processedDevices);
+      setAlerts(processedAlerts);
+      setSensorData(processedSensorData);
+      setPredictedFailures(processedPredictions);
+      setMaintenanceRecommendations(processedMaintenance);
+      setEnvironmentalAlerts(environmentalRes.data || []);
+
+      // Calculate device health from sensor data and predictions
+      const healthData = calculateDeviceHealth(
+        processedDevices,
+        processedSensorData,
+        processedPredictions
+      );
+      setDeviceHealth(healthData);
+
+      // Generate trend data if not available from backend
+      const trends = generateTrendData(processedPredictions);
+      setTrendData(trends);
+
+      // Update statistics with both predictions and alerts
+      updateStatistics(processedPredictions, processedAlerts);
+
         setError(null);
       } catch (error) {
-        setError("Failed to fetch dashboard data");
-        console.error("Error fetching dashboard data:", error);
+      console.error("Error fetching dashboard data:", {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+        },
+      });
+
+      let errorMessage = "Failed to fetch dashboard data. ";
+
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage =
+            "API endpoints not found. Please check the server configuration.";
+        } else {
+          errorMessage += `Server Error: ${error.response.status} - ${
+            error.response.data?.message || "Unknown error"
+          }`;
+        }
+        console.error("Error response:", {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers,
+        });
+      } else if (error.request) {
+        errorMessage =
+          "Could not connect to the server. Please check your connection and server status.";
+        console.error("No response received:", error.request);
+      } else {
+        errorMessage += error.message;
+        console.error("Error setting up request:", error.message);
+      }
+
+      setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
+  // Helper function to calculate device health
+  const calculateDeviceHealth = (devices, sensorData, predictions) => {
+    return devices.map((device) => {
+      const devicePredictions = predictions.filter(
+        (p) => p.device_id === device.id
+      );
+      const avgRiskScore =
+        devicePredictions.length > 0
+          ? devicePredictions.reduce((acc, curr) => acc + curr.risk_score, 0) /
+            devicePredictions.length
+          : 0;
+
+      return {
+        device_id: device.id,
+        device_name: device.name,
+        health_score: Math.max(0, 100 - avgRiskScore * 100),
+        risk_score: avgRiskScore * 100,
+      };
+    });
+  };
+
+  // Helper function to generate trend data
+  const generateTrendData = (predictions) => {
+    const today = new Date();
+    const dates = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split("T")[0];
+    }).reverse();
+
+    return dates.map((date) => ({
+      date,
+      predictions: predictions.filter((p) => p.prediction_time.startsWith(date))
+        .length,
+      actual_failures:
+        predictions.filter(
+          (p) => p.failure_time.startsWith(date) && p.status === "failed"
+        ).length || 0,
+    }));
+  };
+
+  // Helper function to get device name
+  const getDeviceName = (deviceId, devices) => {
+    const device = devices.find((d) => d.id === deviceId);
+    return device ? device.name : "Unknown Device";
+  };
+
+  // Helper function to get device location
+  const getDeviceLocation = (deviceId, devices) => {
+    const device = devices.find((d) => d.id === deviceId);
+    return device ? device.location : "Unknown Location";
+  };
+
+  // Helper function to determine severity from risk score
+  const getSeverityFromRiskScore = (riskScore) => {
+    if (riskScore >= 0.8) return "critical";
+    if (riskScore >= 0.6) return "high";
+    if (riskScore >= 0.4) return "warning";
+    if (riskScore >= 0.2) return "medium";
+    return "low";
+  };
+
+  // Update statistics to include both predictions and alerts
+  const updateStatistics = (predictions, alerts) => {
+    const stats = {
+      totalPredictions: predictions.length,
+      criticalIssues:
+        predictions.filter((p) => p.severity === "critical").length +
+        alerts.filter((a) => a.severity === "critical").length,
+      plannedMaintenance: maintenanceRecommendations.length,
+      resolvedIssues: [...predictions, ...alerts].filter(
+        (item) => item.status === "resolved"
+      ).length,
+      activeAlerts: alerts.filter((a) => a.status === "unresolved").length,
+      warningAlerts: alerts.filter((a) => a.severity === "warning").length,
+      criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
+    };
+    setStatistics(stats);
+  };
+
+  useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -77,8 +435,10 @@ const Dashboard = () => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case "healthy":
+      case "operational":
         return "#4caf50";
       case "warning":
+      case "standby":
         return "#ff9800";
       case "critical":
         return "#dc3545";
@@ -90,8 +450,10 @@ const Dashboard = () => {
   const getStatusBgColor = (status) => {
     switch (status.toLowerCase()) {
       case "healthy":
+      case "operational":
         return "#e8f5e9";
       case "warning":
+      case "standby":
         return "#fff3e0";
       case "critical":
         return "#ffebee";
@@ -99,6 +461,909 @@ const Dashboard = () => {
         return "#e3f2fd";
     }
   };
+
+  const sortPredictedFailures = (failures) => {
+    return [...failures].sort((a, b) => {
+      // First, sort by device (group issues for the same device)
+      if (a.device_id !== b.device_id) {
+        return a.device_id.localeCompare(b.device_id);
+      }
+
+      // Then by severity
+      const severityDiff =
+        SEVERITY_LEVELS[b.severity] - SEVERITY_LEVELS[a.severity];
+      if (severityDiff !== 0) return severityDiff;
+
+      // Then by time to failure (most imminent first)
+      return new Date(a.failure_time) - new Date(b.failure_time);
+    });
+  };
+
+  const calculateTimeDifference = (timestamp) => {
+    const now = new Date();
+    const predictionTime = new Date(timestamp);
+    const diffInHours = Math.floor((now - predictionTime) / (1000 * 60 * 60));
+
+    if (diffInHours < 24) {
+      return `${diffInHours} hours ago`;
+    } else {
+      const days = Math.floor(diffInHours / 24);
+      return `${days} days ago`;
+    }
+  };
+
+  const handleMaintenanceAction = (failureId) => {
+    // Find the failure and its corresponding maintenance recommendations
+    const failure = predictedFailures.find((f) => f.id === failureId);
+    if (failure) {
+      const recommendation = maintenanceRecommendations.find(
+        (r) => r.device_id === failure.device_id
+      );
+
+      // Set the selected failure to show its details
+      setSelectedFailure(failure);
+
+      // Switch to the maintenance tab
+      setSelectedTab(3);
+
+      // Scroll to the relevant maintenance recommendation if it exists
+      if (recommendation) {
+        const element = document.getElementById(
+          `maintenance-${recommendation.id}`
+        );
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    }
+  };
+
+  const handleDeviceClick = (deviceId) => {
+    setSelectedDevice(deviceId);
+    // You can add navigation to device details page or show a modal
+    // depending on your application's requirements
+  };
+
+  const handleShowDetails = (failure) => {
+    setSelectedFailure(failure);
+    setShowDetailsDialog(true);
+  };
+
+  const handleSensorIssue = async (alert) => {
+    try {
+      await axios.post(`${API_BASE_URL}/dashboard/sensor-health`, {
+        device_id: alert.affected_devices[0],
+        sensor_type: alert.sensor_type,
+      });
+
+      await fetchData();
+    } catch (error) {
+      console.error("Error troubleshooting sensor:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to initiate sensor troubleshooting. Please try again.";
+      setError(errorMessage);
+    }
+  };
+
+  const filterPredictions = (predictions) => {
+    return predictions.filter((failure) => {
+      // Time filter
+      if (timeFilter !== "all") {
+        const failureDate = new Date(failure.failure_time);
+        const now = new Date();
+        const days = (failureDate - now) / (1000 * 60 * 60 * 24);
+        if (timeFilter === "week" && days > 7) return false;
+        if (timeFilter === "month" && days > 30) return false;
+      }
+
+      // Component filter
+      if (componentFilter !== "all" && failure.component !== componentFilter) {
+        return false;
+      }
+
+      // Search query
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          failure.device_name?.toLowerCase().includes(searchLower) ||
+          failure.component?.toLowerCase().includes(searchLower) ||
+          failure.failure_reason?.toLowerCase().includes(searchLower) ||
+          failure.location?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      return true;
+    });
+  };
+
+  const handleViewAlert = (alert) => {
+    navigate("/alerts", {
+      state: {
+        selectedAlert: alert,
+        fromDashboard: true,
+      },
+    });
+  };
+
+  const renderStatisticsCards = () => (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Total Predictions
+            </Typography>
+            <Typography variant="h4">{statistics.totalPredictions}</Typography>
+            <LinearProgress
+              variant="determinate"
+              value={(statistics.totalPredictions / 100) * 100}
+              sx={{ mt: 1 }}
+            />
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card
+          sx={{ cursor: "pointer" }}
+          onClick={() => navigate("/alerts", { state: { filter: "critical" } })}
+        >
+          <CardContent>
+            <Typography color="error" gutterBottom>
+              Critical Issues
+            </Typography>
+            <Typography variant="h4">{statistics.criticalIssues}</Typography>
+            <LinearProgress
+              variant="determinate"
+              value={
+                (statistics.criticalIssues / statistics.totalPredictions) * 100
+              }
+              color="error"
+              sx={{ mt: 1 }}
+            />
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Typography color="primary" gutterBottom>
+              Planned Maintenance
+            </Typography>
+            <Typography variant="h4">
+              {statistics.plannedMaintenance}
+            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={
+                (statistics.plannedMaintenance / statistics.totalPredictions) *
+                100
+              }
+              color="primary"
+              sx={{ mt: 1 }}
+            />
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Typography color="success" gutterBottom>
+              Resolved Issues
+            </Typography>
+            <Typography variant="h4">{statistics.resolvedIssues}</Typography>
+            <LinearProgress
+              variant="determinate"
+              value={
+                (statistics.resolvedIssues / statistics.totalPredictions) * 100
+              }
+              color="success"
+              sx={{ mt: 1 }}
+            />
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+
+  const renderFilters = () => (
+    <Grid container spacing={2} sx={{ mb: 3 }}>
+      <Grid item xs={12} sm={4}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Time Range</InputLabel>
+          <Select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            label="Time Range"
+          >
+            <MenuItem value="all">All Time</MenuItem>
+            <MenuItem value="week">Next 7 Days</MenuItem>
+            <MenuItem value="month">Next 30 Days</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid item xs={12} sm={4}>
+        <FormControl fullWidth variant="outlined" size="small">
+          <InputLabel>Component</InputLabel>
+          <Select
+            value={componentFilter}
+            onChange={(e) => setComponentFilter(e.target.value)}
+            label="Component"
+          >
+            <MenuItem value="all">All Components</MenuItem>
+            {Array.from(new Set(predictedFailures.map((f) => f.component))).map(
+              (component) => (
+                <MenuItem key={component} value={component}>
+                  {component}
+                </MenuItem>
+              )
+            )}
+          </Select>
+        </FormControl>
+      </Grid>
+      <Grid item xs={12} sm={4}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search predictions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+          }}
+        />
+      </Grid>
+    </Grid>
+  );
+
+  const handleExport = async () => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/dashboard/export`,
+        {
+          device: componentFilter === "all" ? undefined : componentFilter,
+          date_range: selectedDateRange,
+        },
+        { responseType: "blob" }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `predictions-export-${format(new Date(), "yyyy-MM-dd")}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to export data. Please try again.";
+      setError(errorMessage);
+    }
+  };
+
+  const renderTrendAnalysis = () => (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Typography variant="h6">Failure Prediction Trends</Typography>
+          <ToggleButtonGroup
+            size="small"
+            value={selectedDateRange}
+            exclusive
+            onChange={(e, value) => value && setSelectedDateRange(value)}
+          >
+            <ToggleButton value="7d">7D</ToggleButton>
+            <ToggleButton value="30d">30D</ToggleButton>
+            <ToggleButton value="90d">90D</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        <Box sx={{ height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <RechartsTooltip />
+              <Legend />
+              <Area
+                type="monotone"
+                dataKey="predictions"
+                name="Predictions"
+                stroke="#8884d8"
+                fill="#8884d8"
+                fillOpacity={0.3}
+              />
+              <Area
+                type="monotone"
+                dataKey="actual_failures"
+                name="Actual Failures"
+                stroke="#82ca9d"
+                fill="#82ca9d"
+                fillOpacity={0.3}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
+  const renderDeviceHealth = () => (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Device Health Overview
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={deviceHealth}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="device_name" />
+                  <YAxis />
+                  <RechartsTooltip />
+                  <Legend />
+                  <Bar
+                    dataKey="health_score"
+                    name="Health Score"
+                    fill="#2196f3"
+                  />
+                  <Bar dataKey="risk_score" name="Risk Score" fill="#f44336" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <List>
+              {deviceHealth.map((device) => (
+                <ListItem key={device.device_id}>
+                  <ListItemIcon>
+                    <DeviceHubIcon
+                      color={
+                        device.health_score > 70
+                          ? "success"
+                          : device.health_score > 40
+                          ? "warning"
+                          : "error"
+                      }
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={device.device_name}
+                    secondary={`Health: ${device.health_score}% | Risk: ${device.risk_score}%`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          </Grid>
+        </Grid>
+      </CardContent>
+    </Card>
+  );
+
+  const renderFailurePredictions = () => {
+    const filteredFailures = filterPredictions(predictedFailures);
+
+    return (
+      <Box sx={{ p: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography variant="h6">Predicted Failures</Typography>
+          <Stack direction="row" spacing={2}>
+            <ToggleButtonGroup
+              size="small"
+              value={viewMode}
+              exclusive
+              onChange={(e, value) => value && setViewMode(value)}
+            >
+              <ToggleButton value="list">
+                <Tooltip title="List View">
+                  <FilterListIcon />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value="analytics">
+                <Tooltip title="Analytics View">
+                  <AssessmentIcon />
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={() => setShowExportDialog(true)}
+            >
+              Export
+            </Button>
+          </Stack>
+        </Box>
+
+        {renderStatisticsCards()}
+        {renderFilters()}
+
+        {viewMode === "analytics" ? (
+          <>
+            {renderTrendAnalysis()}
+            {renderDeviceHealth()}
+          </>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Device</TableCell>
+                  <TableCell>Component</TableCell>
+                  <TableCell>Failure Details</TableCell>
+                  <TableCell>Predicted Timeline</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredFailures.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <Typography
+                        variant="body1"
+                        color="textSecondary"
+                        sx={{ py: 3 }}
+                      >
+                        No predictions match your current filters
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredFailures.map((failure) => (
+                    <TableRow
+                      key={failure.id}
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: "rgba(0, 0, 0, 0.04)",
+                        },
+                        borderLeft: 6,
+                        borderLeftColor: (theme) => {
+                          const riskScore = failure.risk_score || 0;
+                          if (riskScore > 0.8) return theme.palette.error.main;
+                          if (riskScore > 0.5)
+                            return theme.palette.warning.main;
+                          return theme.palette.success.main;
+                        },
+                      }}
+                    >
+                      <TableCell>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 500 }}
+                        >
+                          {failure.device_name || "Unknown Device"}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          Location: {failure.location}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {failure.component}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          System: {failure.system_type}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 500, mb: 1 }}
+                          >
+                            {failure.failure_reason || "Unknown Failure"}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {failure.failure_description}
+                          </Typography>
+                          <Box sx={{ mt: 1 }}>
+                            <Chip
+                              size="small"
+                              label={`Confidence: ${(
+                                failure.confidence * 100
+                              ).toFixed(1)}%`}
+                              sx={{
+                                mr: 1,
+                                backgroundColor: (theme) =>
+                                  theme.palette.grey[100],
+                              }}
+                            />
+                            <Chip
+                              size="small"
+                              label={`Risk: ${(
+                                failure.risk_score * 100
+                              ).toFixed(1)}%`}
+                              color={
+                                failure.risk_score > 0.8
+                                  ? "error"
+                                  : failure.risk_score > 0.5
+                                  ? "warning"
+                                  : "success"
+                              }
+                            />
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            Predicted:{" "}
+                            {calculateTimeDifference(failure.prediction_time)}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            Expected Failure:{" "}
+                            {new Date(
+                              failure.failure_time
+                            ).toLocaleDateString()}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color={
+                              calculateTimeRemaining(
+                                failure.failure_time
+                              ).includes("hours")
+                                ? "error"
+                                : "textSecondary"
+                            }
+                            sx={{ fontWeight: 500 }}
+                          >
+                            {calculateTimeRemaining(failure.failure_time)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="column" spacing={1}>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<BuildIcon />}
+                            onClick={() => handleMaintenanceAction(failure.id)}
+                            sx={{
+                              borderRadius: 2,
+                              textTransform: "none",
+                            }}
+                          >
+                            View Maintenance Plan
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<AssessmentIcon />}
+                            onClick={() => handleShowDetails(failure)}
+                            sx={{
+                              borderRadius: 2,
+                              textTransform: "none",
+                            }}
+                          >
+                            View Analysis
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {/* Export Dialog */}
+        <Dialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+        >
+          <DialogContent>
+            <Typography variant="h6" gutterBottom>
+              Export Predictions
+            </Typography>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Export Format</InputLabel>
+              <Select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value)}
+                label="Export Format"
+              >
+                <MenuItem value="csv">CSV</MenuItem>
+                <MenuItem value="xlsx">Excel</MenuItem>
+                <MenuItem value="json">JSON</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Date Range</InputLabel>
+              <Select
+                value={selectedDateRange}
+                onChange={(e) => setSelectedDateRange(e.target.value)}
+                label="Date Range"
+              >
+                <MenuItem value="7d">Last 7 Days</MenuItem>
+                <MenuItem value="30d">Last 30 Days</MenuItem>
+                <MenuItem value="90d">Last 90 Days</MenuItem>
+                <MenuItem value="all">All Time</MenuItem>
+              </Select>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowExportDialog(false)}>Cancel</Button>
+            <Button variant="contained" onClick={handleExport}>
+              Export
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
+  };
+
+  const calculateTimeRemaining = (failureTime) => {
+    const now = new Date();
+    const failure = new Date(failureTime);
+    const diffInHours = Math.floor((failure - now) / (1000 * 60 * 60));
+
+    if (diffInHours < 24) {
+      return `${diffInHours} hours remaining`;
+    } else {
+      const days = Math.floor(diffInHours / 24);
+      return `${days} days remaining`;
+    }
+  };
+
+  const renderEnvironmentalIssues = () => (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Environmental Alerts
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Alert Type</TableCell>
+              <TableCell>Affected Devices</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {environmentalAlerts.map((alert) => (
+              <TableRow key={alert.id}>
+                <TableCell>{alert.type}</TableCell>
+                <TableCell>{alert.affected_devices.join(", ")}</TableCell>
+                <TableCell>{alert.description}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<InfoIcon />}
+                    onClick={() => handleSensorIssue(alert)}
+                  >
+                    Troubleshoot
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
+  const renderMaintenanceRecommendations = () => (
+    <Grid container spacing={2}>
+      {maintenanceRecommendations.map((rec) => (
+        <Grid item xs={12} md={6} key={rec.id}>
+          <Paper
+            sx={{
+              p: 2,
+              bgcolor:
+                selectedFailure?.device_id === rec.device_id
+                  ? "#f5f5f5"
+                  : "inherit",
+            }}
+            id={`maintenance-${rec.id}`}
+          >
+            <Typography variant="h6" color="primary" gutterBottom>
+              {rec.device_name}
+              {selectedFailure?.device_id === rec.device_id && (
+                <Chip
+                  label="Selected Device"
+                  color="primary"
+                  size="small"
+                  sx={{ ml: 1 }}
+                />
+              )}
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              Recommended Action: {rec.action}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Priority: {rec.priority}
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Estimated Duration: {rec.estimated_duration} hours
+            </Typography>
+            <Divider sx={{ my: 1 }} />
+            <Typography variant="subtitle2">Required Resources:</Typography>
+            <List dense>
+              {rec.required_resources.map((resource, index) => (
+                <ListItem key={index}>
+                  <ListItemIcon>
+                    <BuildIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText primary={resource} />
+                </ListItem>
+              ))}
+            </List>
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              sx={{ mt: 1 }}
+              startIcon={<TimelineIcon />}
+            >
+              Schedule Maintenance
+            </Button>
+          </Paper>
+        </Grid>
+      ))}
+      {maintenanceRecommendations.length === 0 && (
+        <Grid item xs={12}>
+          <Alert severity="info">
+            No maintenance recommendations at this time.
+          </Alert>
+        </Grid>
+      )}
+    </Grid>
+  );
+
+  // Add handleResolveAlert function
+  const handleResolveAlert = async (alertId) => {
+    try {
+      // Update the alert status locally first for immediate feedback
+      setAlerts(
+        alerts.map((alert) =>
+          alert.id === alertId ? { ...alert, status: "resolved" } : alert
+        )
+      );
+
+      // Close the details dialog if it's open
+      setShowDetailsDialog(false);
+
+      // Update statistics
+      updateStatistics(predictedFailures, alerts);
+
+      setError(null);
+    } catch (error) {
+      console.error("Error resolving alert:", error);
+      setError("Failed to resolve alert. Please try again.");
+    }
+  };
+
+  // Add renderAlerts function
+  const getSeverityLabel = (severity) => {
+    if (!severity) return "UNKNOWN";
+    return (
+      typeof severity === "string" ? severity : String(severity)
+    ).toUpperCase();
+  };
+
+  const renderAlerts = () => (
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Severity</TableCell>
+            <TableCell>Timestamp</TableCell>
+            <TableCell>Device</TableCell>
+            <TableCell>Component</TableCell>
+            <TableCell>Message</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {alerts.map((alert) => (
+            <TableRow
+              key={alert.id}
+              sx={{
+                backgroundColor:
+                  alert.severity === "critical"
+                    ? "error.light"
+                    : alert.severity === "warning"
+                    ? "warning.light"
+                    : alert.severity === "info"
+                    ? "info.light"
+                    : "inherit",
+                opacity: alert.status === "resolved" ? 0.7 : 1,
+              }}
+            >
+              <TableCell>
+                <Chip
+                  label={getSeverityLabel(alert.severity)}
+                  color={
+                    alert.severity === "critical"
+                      ? "error"
+                      : alert.severity === "warning"
+                      ? "warning"
+                      : "info"
+                  }
+                  size="small"
+                />
+              </TableCell>
+              <TableCell>
+                {new Date(alert.timestamp).toLocaleString()}
+              </TableCell>
+              <TableCell>{alert.device_name}</TableCell>
+              <TableCell>{alert.component}</TableCell>
+              <TableCell>{alert.message}</TableCell>
+              <TableCell>
+                <Chip
+                  label={
+                    alert.status
+                      ? String(alert.status).toUpperCase()
+                      : "UNRESOLVED"
+                  }
+                  color={alert.status === "resolved" ? "success" : "warning"}
+                  size="small"
+                />
+              </TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={1}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleViewAlert(alert)}
+                    title="View Details"
+                  >
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                  {(!alert.status || alert.status !== "resolved") && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleViewAlert(alert)}
+                      title="Mark as Resolved"
+                    >
+                      <CheckCircleIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+          {alerts.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} align="center">
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ py: 2 }}
+                >
+                  No alerts to display
+                </Typography>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
 
   if (loading) {
     return (
@@ -127,119 +1392,248 @@ const Dashboard = () => {
         System Overview
       </Typography>
 
-      {/* Device Status */}
-      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-        Device Status
+      {/* Main Content Tabs - Reordered to show alerts first */}
+      <Box sx={{ mb: 3 }}>
+        <Tabs
+          value={selectedTab}
+          onChange={(e, newValue) => setSelectedTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab label="Alerts & Issues" />
+          <Tab label="Predictions" />
+          <Tab label="Maintenance" />
+          <Tab label="Overview" />
+        </Tabs>
+      </Box>
+
+      {/* Tab Content - Updated order to match new tab order */}
+      {selectedTab === 0 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Active Alerts and Issues
       </Typography>
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {devices.map((device) => (
-          <Grid item xs={12} sm={6} md={4} key={device.id}>
-            <Paper
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2, mb: 3 }}>
+                <Box
               sx={{
-                p: 2,
-                bgcolor: getStatusBgColor(device.status),
-                border: 1,
-                borderColor: getStatusColor(device.status),
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                {device.name}
-              </Typography>
-              <Typography>Status: {device.status}</Typography>
-              <Typography>Location: {device.location}</Typography>
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6">System Alerts</Typography>
+                  <Box>
+                    <Chip
+                      label={`Critical: ${
+                        alerts.filter((a) => a.severity === "critical").length
+                      }`}
+                      color="error"
+                      sx={{ mr: 1, cursor: "pointer" }}
+                      onClick={() =>
+                        navigate("/alerts", { state: { filter: "critical" } })
+                      }
+                    />
+                    <Chip
+                      label={`Warning: ${
+                        alerts.filter((a) => a.severity === "warning").length
+                      }`}
+                      color="warning"
+                      sx={{ mr: 1, cursor: "pointer" }}
+                      onClick={() =>
+                        navigate("/alerts", { state: { filter: "warning" } })
+                      }
+                    />
+                    <Chip
+                      label={`Info: ${
+                        alerts.filter((a) => a.severity === "info").length
+                      }`}
+                      color="info"
+                      sx={{ cursor: "pointer" }}
+                      onClick={() =>
+                        navigate("/alerts", { state: { filter: "info" } })
+                      }
+                    />
+                  </Box>
+                </Box>
+                {renderAlerts()}
             </Paper>
           </Grid>
-        ))}
-      </Grid>
-
-      {/* Active Alerts */}
-      <Typography variant="h6" gutterBottom>
-        Active Alerts
-      </Typography>
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        {alerts.map((alert) => (
-          <Grid item xs={12} sm={6} key={alert.id}>
-            <Paper
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2 }}>
+                <Box
               sx={{
-                p: 2,
-                bgcolor:
-                  alert.severity >= 7
-                    ? "#ffebee"
-                    : alert.severity >= 4
-                    ? "#fff3e0"
-                    : "#e3f2fd",
-                border: 1,
-                borderColor:
-                  alert.severity >= 7
-                    ? "#dc3545"
-                    : alert.severity >= 4
-                    ? "#ff9800"
-                    : "#0288d1",
-              }}
-            >
-              <Typography variant="subtitle1">
-                Device: {alert.device_id}
-              </Typography>
-              <Typography>{alert.message}</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Severity: {alert.severity}/10
-              </Typography>
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6">Environmental Issues</Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<NotificationsIcon />}
+                    onClick={() =>
+                      navigate("/alerts", {
+                        state: { filter: "environmental" },
+                      })
+                    }
+                  >
+                    View All Environmental Alerts
+                  </Button>
+                </Box>
+                {renderEnvironmentalIssues()}
             </Paper>
           </Grid>
-        ))}
-        {alerts.length === 0 && (
-          <Grid item xs={12}>
-            <Alert severity="success">No active alerts</Alert>
           </Grid>
-        )}
-      </Grid>
+        </Box>
+      )}
 
-      {/* Sensor Readings */}
+      {selectedTab === 1 && (
+        <>
+          {renderFilters()}
+          {renderFailurePredictions()}
+        </>
+      )}
+
+      {selectedTab === 2 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Maintenance Recommendations
+          </Typography>
+          {renderMaintenanceRecommendations()}
+        </Box>
+      )}
+
+      {selectedTab === 3 && (
+        <>
+          {renderStatisticsCards()}
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              {renderTrendAnalysis()}
+      </Grid>
+            <Grid item xs={12} md={4}>
+              {renderDeviceHealth()}
+            </Grid>
+          </Grid>
+        </>
+      )}
+
+      {/* Alert Details Dialog */}
+      <Dialog
+        open={showDetailsDialog}
+        onClose={() => setShowDetailsDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedFailure && (
+          <>
+            <DialogContent>
       <Typography variant="h6" gutterBottom>
-        Sensor Readings
+                Alert Details
       </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
       <Paper sx={{ p: 2 }}>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={sensorData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="timestamp"
-              tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-              interval="preserveStartEnd"
-            />
-            <YAxis domain={[0, "auto"]} />
-            <Tooltip
-              labelFormatter={(value) => new Date(value).toLocaleString()}
-              formatter={(value) => [value.toFixed(2), ""]}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="temperature"
-              stroke="#dc3545"
-              name="Temperature"
-              dot={false}
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="humidity"
-              stroke="#0288d1"
-              name="Humidity"
-              dot={false}
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="vibration"
-              stroke="#ff9800"
-              name="Vibration"
-              dot={false}
-              strokeWidth={2}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Device Information
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="body2">
+                          <strong>Device:</strong> {selectedFailure.device_name}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Location:</strong> {selectedFailure.location}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2">
+                          <strong>Component:</strong>{" "}
+                          {selectedFailure.component}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Status:</strong> {selectedFailure.status}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Alert Information
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Message:</strong>{" "}
+                      {selectedFailure.message ||
+                        selectedFailure.failure_reason}
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      <strong>Severity:</strong>{" "}
+                      <Chip
+                        label={selectedFailure.severity.toUpperCase()}
+                        color={
+                          selectedFailure.severity === "critical"
+                            ? "error"
+                            : selectedFailure.severity === "warning"
+                            ? "warning"
+                            : "info"
+                        }
+                        size="small"
+                      />
+                    </Typography>
+                    <Typography variant="body2">
+                      <strong>Timestamp:</strong>{" "}
+                      {new Date(
+                        selectedFailure.timestamp ||
+                          selectedFailure.prediction_time
+                      ).toLocaleString()}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                {selectedFailure.recommended_actions && (
+                  <Grid item xs={12}>
+                    <Paper sx={{ p: 2 }}>
+                      <Typography variant="subtitle1" gutterBottom>
+                        Recommended Actions
+                      </Typography>
+                      <List dense>
+                        {selectedFailure.recommended_actions.map(
+                          (action, idx) => (
+                            <ListItem key={idx}>
+                              <ListItemIcon>
+                                <BuildIcon color="primary" />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={action.title}
+                                secondary={action.description}
+                              />
+                            </ListItem>
+                          )
+                        )}
+                      </List>
       </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowDetailsDialog(false)}>Close</Button>
+              {!selectedFailure.status ||
+              selectedFailure.status === "unresolved" ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleResolveAlert(selectedFailure.id)}
+                >
+                  Mark as Resolved
+                </Button>
+              ) : null}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 };
