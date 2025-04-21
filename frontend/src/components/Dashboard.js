@@ -136,10 +136,13 @@ const Dashboard = () => {
   const [exportFormat, setExportFormat] = useState("csv");
   const [selectedDateRange, setSelectedDateRange] = useState("7d");
 
+  const [analysisData, setAnalysisData] = useState({});
+  const [movingAlerts, setMovingAlerts] = useState({});
+
   const navigate = useNavigate();
 
-  const fetchData = async () => {
-    try {
+    const fetchData = async () => {
+      try {
       console.log("Fetching data from:", API_BASE_URL);
 
       // Test endpoint first
@@ -164,34 +167,34 @@ const Dashboard = () => {
 
       // Process alerts data with proper severity handling
       const processedAlerts = (alertsRes.data || []).map((alert) => ({
-        id: alert.id || Math.random().toString(36).substr(2, 9),
-        type: alert.type || "system",
-        severity: alert.severity || "low",
-        message: alert.message || "No message available",
-        timestamp: alert.timestamp || new Date().toISOString(),
-        device_id: alert.device_id || "",
+          id: alert.id || Math.random().toString(36).substr(2, 9),
+          type: alert.type || "system",
+          severity: alert.severity || "low",
+          message: alert.message || "No message available",
+          timestamp: alert.timestamp || new Date().toISOString(),
+          device_id: alert.device_id || "",
         device_name: alert.device_name || getDeviceName(alert.device_id, devicesRes.data),
-        alert_type: alert.alert_type || "system",
-        status: alert.status || "unresolved",
-        component: alert.component || "Unknown",
+          alert_type: alert.alert_type || "system",
+          status: alert.status || "unresolved",
+          component: alert.component || "Unknown",
         location: alert.location || getDeviceLocation(alert.device_id, devicesRes.data),
         acknowledged: alert.acknowledged || false,
       }));
 
       // Process environmental alerts with proper severity handling
       const processedEnvironmentalAlerts = (environmentalRes.data || []).map((alert) => ({
-        id: alert.id || Math.random().toString(36).substr(2, 9),
-        type: "environmental",
-        severity: alert.severity || "warning",
-        message: alert.description || "No message available",
-        timestamp: alert.start_time || new Date().toISOString(),
-        device_id: alert.affected_devices?.[0] || "",
+          id: alert.id || Math.random().toString(36).substr(2, 9),
+          type: "environmental",
+          severity: alert.severity || "warning",
+          message: alert.description || "No message available",
+          timestamp: alert.start_time || new Date().toISOString(),
+          device_id: alert.affected_devices?.[0] || "",
         device_name: getDeviceName(alert.affected_devices?.[0], devicesRes.data),
-        alert_type: "environmental",
-        status: "unresolved",
-        component: alert.type || "Environmental",
+          alert_type: "environmental",
+          status: "unresolved",
+          component: alert.type || "Environmental",
         location: getDeviceLocation(alert.affected_devices?.[0], devicesRes.data),
-        affected_devices: alert.affected_devices || [],
+          affected_devices: alert.affected_devices || [],
         acknowledged: alert.acknowledged || false,
       }));
 
@@ -214,14 +217,14 @@ const Dashboard = () => {
       };
       setStatistics(stats);
 
-      setError(null);
-    } catch (error) {
+        setError(null);
+      } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setError("Failed to fetch alerts data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Helper function to calculate device health
   const calculateDeviceHealth = (devices, sensorData, predictions) => {
@@ -1179,6 +1182,47 @@ const Dashboard = () => {
     return 'UNKNOWN';
   };
 
+  // Fetch analysis data for all alerts
+  useEffect(() => {
+    const fetchAnalysisData = async () => {
+      const analysisPromises = alerts.map(async (alert) => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/predictions/analysis/${alert.id}`);
+          return { [alert.id]: response.data };
+        } catch (error) {
+          console.error(`Error fetching analysis for alert ${alert.id}:`, error);
+          return { [alert.id]: null };
+        }
+      });
+
+      const results = await Promise.all(analysisPromises);
+      const combinedData = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      setAnalysisData(combinedData);
+    };
+
+    fetchAnalysisData();
+  }, [alerts]);
+
+  const handleMoveToMaintenance = async (alertId) => {
+    try {
+      setMovingAlerts(prev => ({ ...prev, [alertId]: true }));
+      await axios.post(`${API_BASE_URL}/predictions/move-to-maintenance/${alertId}`);
+      
+      // Add animation effect
+      const element = document.getElementById(`alert-${alertId}`);
+      if (element) {
+        element.classList.add('jump-animation');
+        setTimeout(() => {
+          element.classList.remove('jump-animation');
+          setMovingAlerts(prev => ({ ...prev, [alertId]: false }));
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error moving to maintenance:", error);
+      setMovingAlerts(prev => ({ ...prev, [alertId]: false }));
+    }
+  };
+
   // Update the renderAlerts function
   const renderAlerts = () => (
     <Box>
@@ -1202,6 +1246,77 @@ const Dashboard = () => {
           />
         </Box>
       </Box>
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Severity</TableCell>
+            <TableCell>Timestamp</TableCell>
+            <TableCell>Device</TableCell>
+            <TableCell>Message</TableCell>
+            <TableCell>Status</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+            {alerts.map((alert) => {
+              const severityNum = getSeverityNumber(alert.severity);
+              const severityLabel = getSeverityLabel(alert.severity);
+              const severityColor = 
+                severityNum >= 7 ? 'error' :
+                severityNum >= 4 ? 'warning' : 'info';
+              
+              return (
+            <TableRow
+              key={alert.id}
+              sx={{
+                    backgroundColor: `${severityColor}.lighter`,
+                    opacity: alert.acknowledged ? 0.7 : 1,
+              }}
+            >
+              <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip
+                        label={`${severityLabel} (${severityNum})`}
+                        color={severityColor}
+                  size="small"
+                        sx={{ fontWeight: 'bold' }}
+                />
+                    </Box>
+              </TableCell>
+                  <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
+                  <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
+                  <TableCell>{alert.message || 'No message'}</TableCell>
+              <TableCell>
+                <Chip
+                      label={alert.acknowledged ? "RESOLVED" : "UNRESOLVED"}
+                      color={alert.acknowledged ? "success" : "warning"}
+                  size="small"
+                      sx={{ fontWeight: 'bold' }}
+                />
+              </TableCell>
+            </TableRow>
+              );
+            })}
+          {alerts.length === 0 && (
+            <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                  No alerts to display
+                </Typography>
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+    </Box>
+  );
+
+  const renderPredictions = () => (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Predictions
+      </Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -1209,9 +1324,13 @@ const Dashboard = () => {
               <TableCell>Severity</TableCell>
               <TableCell>Timestamp</TableCell>
               <TableCell>Device</TableCell>
-              <TableCell>Component</TableCell>
               <TableCell>Message</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell>Predicted Failure Date</TableCell>
+              <TableCell>Days Remaining</TableCell>
+              <TableCell>Causes</TableCell>
+              <TableCell>Root Cause</TableCell>
+              <TableCell>Resource Requirements</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -1223,14 +1342,15 @@ const Dashboard = () => {
                 severityNum >= 7 ? 'error' :
                 severityNum >= 4 ? 'warning' : 'info';
               
+              const analysis = analysisData[alert.id];
+              const isMoving = movingAlerts[alert.id] || false;
+              
               return (
                 <TableRow
                   key={alert.id}
+                  id={`alert-${alert.id}`}
                   sx={{
                     backgroundColor: `${severityColor}.lighter`,
-                    '&:hover': {
-                      backgroundColor: `${severityColor}.light`,
-                    },
                     opacity: alert.acknowledged ? 0.7 : 1,
                   }}
                 >
@@ -1246,7 +1366,6 @@ const Dashboard = () => {
                   </TableCell>
                   <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
                   <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
-                  <TableCell>{alert.component || 'Unknown'}</TableCell>
                   <TableCell>{alert.message || 'No message'}</TableCell>
                   <TableCell>
                     <Chip
@@ -1256,38 +1375,64 @@ const Dashboard = () => {
                       sx={{ fontWeight: 'bold' }}
                     />
                   </TableCell>
+                  <TableCell>
+                    {analysis ? new Date(analysis.predicted_failure_date).toLocaleDateString() : 'Loading...'}
+                  </TableCell>
+                  <TableCell>
+                    {analysis ? `${analysis.days_remaining} days` : 'Loading...'}
+                  </TableCell>
+                  <TableCell>
+                    {analysis ? (
+                      <Box>
+                        {analysis.causes.map((cause, index) => (
+                          <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
+                            • {cause}
+                          </Typography>
+                        ))}
+                      </Box>
+                    ) : 'Loading...'}
+                  </TableCell>
+                  <TableCell>
+                    {analysis ? (
+                      <Typography variant="body2">
+                        {analysis.root_cause}
+                      </Typography>
+                    ) : 'Loading...'}
+                  </TableCell>
+                  <TableCell>
+                    {analysis && analysis.resource_requirements ? (
+                      <Box>
+                        {Object.entries(analysis.resource_requirements).map(([resource, count]) => (
+                          <Typography key={resource} variant="body2" sx={{ mb: 0.5 }}>
+                            • {count} {resource.replace(/_/g, ' ')}
+                          </Typography>
+                        ))}
+                      </Box>
+                    ) : 'Loading...'}
+                  </TableCell>
                   <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Tooltip title="View in Alerts Page">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate('/alerts', { state: { selectedAlert: alert } })}
-                          sx={{ color: 'primary.main' }}
-                        >
-                          <LaunchIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {!alert.acknowledged && (
-                        <Tooltip title="Mark as Resolved">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleResolveAlert(alert.id)}
-                            sx={{ color: 'success.main' }}
-                          >
-                            <CheckCircleIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Stack>
+                    <Tooltip title="Move to Maintenance">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleMoveToMaintenance(alert.id)}
+                        disabled={isMoving}
+                        sx={{
+                          color: 'primary.main',
+                          animation: isMoving ? 'jump 1s infinite' : 'none',
+                        }}
+                      >
+                        <BuildIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               );
             })}
             {alerts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={11} align="center">
                   <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
-                    No alerts to display
+                    No predictions to display
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -1345,13 +1490,13 @@ const Dashboard = () => {
         <Box>
           <Typography variant="h6" gutterBottom>
             Active Alerts and Issues
-          </Typography>
+      </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Paper sx={{ p: 2, mb: 3 }}>
                 {renderAlerts()}
-              </Paper>
-            </Grid>
+            </Paper>
+          </Grid>
             <Grid item xs={12}>
               <Paper sx={{ p: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
@@ -1366,25 +1511,89 @@ const Dashboard = () => {
                   </Button>
                 </Box>
                 {renderEnvironmentalIssues()}
-              </Paper>
-            </Grid>
+            </Paper>
+          </Grid>
           </Grid>
         </Box>
       )}
 
       {selectedTab === 1 && (
-        <>
-          {renderFilters()}
-          {renderFailurePredictions()}
-        </>
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Predictions
+          </Typography>
+          {renderPredictions()}
+        </Box>
       )}
 
       {selectedTab === 2 && (
         <Box>
           <Typography variant="h6" gutterBottom>
-            Maintenance Recommendations
+            Maintenance
           </Typography>
-          {renderMaintenanceRecommendations()}
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Severity</TableCell>
+                  <TableCell>Timestamp</TableCell>
+                  <TableCell>Device</TableCell>
+                  <TableCell>Message</TableCell>
+                  <TableCell>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {alerts.map((alert) => {
+                  const severityNum = getSeverityNumber(alert.severity);
+                  const severityLabel = getSeverityLabel(alert.severity);
+                  const severityColor = 
+                    severityNum >= 7 ? 'error' :
+                    severityNum >= 4 ? 'warning' : 'info';
+                  
+                  return (
+                    <TableRow
+                      key={alert.id}
+                      sx={{
+                        backgroundColor: `${severityColor}.lighter`,
+                        opacity: alert.acknowledged ? 0.7 : 1,
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={`${severityLabel} (${severityNum})`}
+                            color={severityColor}
+                            size="small"
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </Box>
+                      </TableCell>
+                      <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
+                      <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
+                      <TableCell>{alert.message || 'No message'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={alert.acknowledged ? "RESOLVED" : "UNRESOLVED"}
+                          color={alert.acknowledged ? "success" : "warning"}
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {alerts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                        No maintenance items to display
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
       )}
 
@@ -1394,7 +1603,7 @@ const Dashboard = () => {
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
               {renderTrendAnalysis()}
-            </Grid>
+      </Grid>
             <Grid item xs={12} md={4}>
               {renderDeviceHealth()}
             </Grid>
@@ -1412,12 +1621,12 @@ const Dashboard = () => {
         {selectedFailure && (
           <>
             <DialogContent>
-              <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom>
                 Alert Details
-              </Typography>
+      </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       Device Information
                     </Typography>
@@ -1496,7 +1705,7 @@ const Dashboard = () => {
                           )
                         )}
                       </List>
-                    </Paper>
+      </Paper>
                   </Grid>
                 )}
               </Grid>

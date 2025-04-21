@@ -365,6 +365,13 @@ class FailureStats(BaseModel):
     component_distribution: Dict[str, int]
     device_distribution: Dict[str, int]
 
+class PredictionAnalysis(BaseModel):
+    predicted_failure_date: str
+    days_remaining: int
+    causes: List[str]
+    root_cause: str
+    resource_requirements: Optional[Dict[str, int]] = None
+
 @app.get("/")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
@@ -1085,6 +1092,67 @@ async def get_root_causes():
         ]
         
         return root_causes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/predictions/analysis/{alert_id}")
+async def get_prediction_analysis(alert_id: str):
+    """Get detailed analysis for a specific alert"""
+    try:
+        # Find the alert
+        alert = next((a for a in alerts if a["id"] == alert_id), None)
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+        # Get device data
+        device = devices.get(alert["device_id"])
+        if not device:
+            raise HTTPException(status_code=404, detail="Device not found")
+
+        # Calculate predicted failure date (3 days from now for demo)
+        predicted_date = datetime.now() + timedelta(days=3)
+        
+        # Calculate days remaining based on severity-weighted SLA
+        severity_weight = {
+            "critical": 1,
+            "high": 2,
+            "medium": 3,
+            "low": 5
+        }
+        days_remaining = severity_weight.get(alert["type"].lower(), 3)
+
+        # Get causes using LSTM model
+        causes = model.analyze_causes(alert)
+        
+        # Get root cause
+        root_cause = model.predict_root_cause(alert)
+        
+        # Get resource requirements
+        resource_reqs = model.predict_resource_requirements(alert, device)
+
+        return PredictionAnalysis(
+            predicted_failure_date=predicted_date.isoformat(),
+            days_remaining=days_remaining,
+            causes=causes,
+            root_cause=root_cause,
+            resource_requirements=resource_reqs
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/predictions/move-to-maintenance/{alert_id}")
+async def move_to_maintenance(alert_id: str):
+    """Move an alert to maintenance tab"""
+    try:
+        alert = next((a for a in alerts if a["id"] == alert_id), None)
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        
+        # Update alert status to indicate it's moved to maintenance
+        alert["moved_to_maintenance"] = True
+        alert["maintenance_timestamp"] = datetime.now().isoformat()
+        
+        return {"message": "Alert moved to maintenance successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

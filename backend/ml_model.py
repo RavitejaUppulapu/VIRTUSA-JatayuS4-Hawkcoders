@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime, timedelta
 import os
 import joblib
+import random
 
 Sequential = keras.models.Sequential
 LSTM = keras.layers.LSTM
@@ -17,6 +18,7 @@ class PredictiveMaintenanceModel:
         self.model = None
         self.scaler = MinMaxScaler()
         self.sequence_length = 10  # Number of time steps to look back
+        self.gpt_model = None  # Will be initialized when needed
         
         # Data paths
         self.BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -213,4 +215,193 @@ class PredictiveMaintenanceModel:
                     }
                 }
                 alerts.append(alert)
-        return alerts 
+        return alerts
+
+    def analyze_causes_with_gpt(self, alert, device_data):
+        """Analyze potential causes using GPT model"""
+        try:
+            # Prepare the prompt for GPT
+            prompt = f"""
+            Analyze the following alert and device information to determine potential causes:
+            
+            Alert Details:
+            - Message: {alert.get('message', 'No message')}
+            - Severity: {alert.get('severity', 'Unknown')}
+            - Type: {alert.get('type', 'Unknown')}
+            
+            Device Information:
+            - Type: {device_data.get('type', 'Unknown')}
+            - Location: {device_data.get('location', 'Unknown')}
+            - Status: {device_data.get('status', 'Unknown')}
+            
+            Please provide a list of potential causes for this alert, focusing on:
+            1. Hardware-related issues
+            2. Software-related issues
+            3. Environmental factors
+            4. Operational issues
+            
+            Format the response as a list of causes, one per line.
+            """
+            
+            # In a real implementation, you would call a GPT API here
+            # For now, we'll return mock responses based on alert type
+            if "temperature" in alert.get('message', '').lower():
+                return [
+                    "Cooling system malfunction",
+                    "Airflow obstruction",
+                    "Thermal sensor failure",
+                    "HVAC system issues"
+                ]
+            elif "humidity" in alert.get('message', '').lower():
+                return [
+                    "Humidity control system failure",
+                    "Water leakage",
+                    "Environmental conditions",
+                    "Sensor calibration issues"
+                ]
+            elif "power" in alert.get('message', '').lower():
+                return [
+                    "Power supply instability",
+                    "Voltage fluctuations",
+                    "Circuit overload",
+                    "Backup power system issues"
+                ]
+            else:
+                return [
+                    "Component wear and tear",
+                    "System configuration issues",
+                    "Environmental stress",
+                    "Operational overload"
+                ]
+        except Exception as e:
+            print(f"Error in analyze_causes_with_gpt: {str(e)}")
+            return ["Unable to analyze causes at this time"]
+
+    def predict_resource_requirements_with_gpt(self, alert, device_data, causes):
+        """Predict required resources using GPT model"""
+        try:
+            # Prepare the prompt for GPT
+            prompt = f"""
+            Based on the following alert, device information, and potential causes,
+            determine the required resources for maintenance:
+            
+            Alert Details:
+            - Message: {alert.get('message', 'No message')}
+            - Severity: {alert.get('severity', 'Unknown')}
+            - Type: {alert.get('type', 'Unknown')}
+            
+            Device Information:
+            - Type: {device_data.get('type', 'Unknown')}
+            - Location: {device_data.get('location', 'Unknown')}
+            - Status: {device_data.get('status', 'Unknown')}
+            
+            Potential Causes:
+            {chr(10).join(causes)}
+            
+            Please provide a list of required resources in the format:
+            resource_name: quantity
+            
+            Include:
+            1. Personnel requirements
+            2. Equipment/tools needed
+            3. Spare parts
+            4. Specialized resources
+            """
+            
+            # In a real implementation, you would call a GPT API here
+            # For now, we'll return mock responses based on alert type
+            if "temperature" in alert.get('message', '').lower():
+                return {
+                    "HVAC_technicians": 2,
+                    "Thermal_sensors": 1,
+                    "Cooling_fans": 2,
+                    "Thermal_paste": 1
+                }
+            elif "humidity" in alert.get('message', '').lower():
+                return {
+                    "Maintenance_technicians": 1,
+                    "Humidity_sensors": 1,
+                    "Dehumidifiers": 1,
+                    "Sealant_materials": 1
+                }
+            elif "power" in alert.get('message', '').lower():
+                return {
+                    "Electricians": 2,
+                    "Voltage_meters": 1,
+                    "Power_supplies": 1,
+                    "Circuit_testers": 1
+                }
+            else:
+                return {
+                    "Maintenance_technicians": 1,
+                    "Diagnostic_tools": 1,
+                    "Replacement_parts": 1,
+                    "Safety_equipment": 1
+                }
+        except Exception as e:
+            print(f"Error in predict_resource_requirements_with_gpt: {str(e)}")
+            return {}
+
+    def analyze_causes(self, alert):
+        """Analyze potential causes using LSTM model"""
+        try:
+            # Get device data
+            device_id = alert["device_id"]
+            device_data = self.get_device_data(device_id)
+            
+            # Use GPT for cause analysis
+            causes = self.analyze_causes_with_gpt(alert, device_data)
+            
+            return causes
+        except Exception as e:
+            print(f"Error in analyze_causes: {str(e)}")
+            return ["Unable to analyze causes at this time"]
+
+    def predict_resource_requirements(self, alert, device):
+        """Predict required resources based on alert and device type"""
+        try:
+            # Get causes first
+            causes = self.analyze_causes(alert)
+            
+            # Use GPT for resource prediction
+            requirements = self.predict_resource_requirements_with_gpt(alert, device, causes)
+            
+            return requirements
+        except Exception as e:
+            print(f"Error in predict_resource_requirements: {str(e)}")
+            return {}
+
+    def get_recent_sensor_data(self, device_id):
+        """Get recent sensor data for a device"""
+        # This would be implemented to fetch actual sensor data
+        # For demo, return mock data
+        return [
+            {"timestamp": datetime.now().isoformat(), "value": random.uniform(0, 100)}
+            for _ in range(10)
+        ]
+
+    def prepare_sequence_data(self, sensor_data):
+        """Prepare sensor data for LSTM input"""
+        # Convert to numpy array and reshape for LSTM
+        values = np.array([d["value"] for d in sensor_data])
+        return values.reshape(1, len(values), 1)
+
+    def get_device_data(self, device_id):
+        """Get device data"""
+        # This would be implemented to fetch actual device data
+        # For demo, return mock data
+        return {
+            "type": "HVAC",
+            "status": "operational",
+            "location": "Server Room"
+        }
+
+    def analyze_sensor_data(self, sensor_data):
+        """Analyze sensor data for anomalies"""
+        # This would be implemented to analyze actual sensor data
+        # For demo, return mock analysis
+        return {
+            "temperature": "normal",
+            "humidity": "normal",
+            "power": "normal"
+        } 
