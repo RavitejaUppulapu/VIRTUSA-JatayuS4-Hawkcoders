@@ -1,12 +1,16 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow import keras
 from sklearn.preprocessing import MinMaxScaler
 from datetime import datetime, timedelta
 import os
 import joblib
+
+Sequential = keras.models.Sequential
+LSTM = keras.layers.LSTM
+Dense = keras.layers.Dense
+Dropout = keras.layers.Dropout
 
 class PredictiveMaintenanceModel:
     def __init__(self):

@@ -10,6 +10,7 @@ import os
 import uuid
 import random
 from enum import Enum
+from fastapi_utils.tasks import repeat_every
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -71,27 +72,82 @@ def generate_mock_alerts():
         mock_alerts.append(alert)
     return mock_alerts
 
-def generate_sensor_history():
-    """Generate mock sensor history for each device"""
-    for device_id, device in devices.items():
-        if device_id not in sensor_history:
-            sensor_history[device_id] = []
+def generate_sensor_history(device_id=None):
+    """Generate mock sensor history for each device or a specific device if device_id is provided"""
+    current_time = datetime.now()
+    
+    if device_id:
+        device_ids = [device_id] if device_id in devices else []
+    else:
+        device_ids = devices.keys()
+
+    for device_id in device_ids:
+        sensor_history[device_id] = []
+        base_values = devices[device_id]["sensors"]
         
-        # Get the base values for this device's sensors
-        base_values = device["sensors"]
-        
-        # Generate last 10 readings with small variations
-        for i in range(10):
+        # Generate readings from oldest to newest
+        for i in range(9, -1, -1):  # 9 to 0, to generate oldest to newest
+            reading_time = current_time - timedelta(minutes=i*5)
             reading = {
-                "timestamp": (datetime.now() - timedelta(minutes=i*5)).isoformat()
+                "timestamp": reading_time.strftime("%H:%M"),
+                "raw_timestamp": reading_time.isoformat(),
+                "index": 9-i  # Add index for proper ordering
             }
             
-            # Add each sensor with a small random variation
+            # Add each sensor with device-specific variations
             for sensor_name, base_value in base_values.items():
-                variation = random.uniform(-0.1, 0.1) * base_value
-                reading[sensor_name] = round(base_value + variation, 2)
+                # Generate variations based on device type and sensor
+                variation = 0
+                if devices[device_id]["type"].lower() == "hvac":
+                    if sensor_name == "temperature":
+                        variation = random.uniform(-2, 2)
+                    elif sensor_name == "humidity":
+                        variation = random.uniform(-5, 5)
+                    else:
+                        variation = random.uniform(-0.1, 0.1) * base_value
+                elif devices[device_id]["type"].lower() == "power":
+                    if sensor_name in ["voltage", "current"]:
+                        variation = random.uniform(-0.05, 0.05) * base_value
+                    else:
+                        variation = random.uniform(-0.1, 0.1) * base_value
+                elif devices[device_id]["type"].lower() == "network":
+                    if sensor_name == "packet_loss":
+                        variation = random.uniform(-0.01, 0.01)
+                    elif sensor_name == "bandwidth":
+                        variation = random.uniform(-50, 50)
+                    else:
+                        variation = random.uniform(-0.1, 0.1) * base_value
+                elif devices[device_id]["type"].lower() == "storage":
+                    if sensor_name == "disk_usage":
+                        variation = random.uniform(-0.5, 0.5)
+                    elif sensor_name == "read_latency":
+                        variation = random.uniform(-0.2, 0.2)
+                    else:
+                        variation = random.uniform(-0.1, 0.1) * base_value
+                else:
+                    variation = random.uniform(-0.1, 0.1) * base_value
+                
+                # Ensure values stay within reasonable bounds
+                if sensor_name == "temperature":
+                    reading[sensor_name] = round(max(0, min(100, base_value + variation)), 2)
+                elif sensor_name == "humidity":
+                    reading[sensor_name] = round(max(0, min(100, base_value + variation)), 2)
+                elif sensor_name == "packet_loss":
+                    reading[sensor_name] = round(max(0, min(100, base_value + variation)), 2)
+                elif sensor_name == "disk_usage":
+                    reading[sensor_name] = round(max(0, min(100, base_value + variation)), 2)
+                elif sensor_name == "fuel_level":
+                    reading[sensor_name] = round(max(0, min(100, base_value + variation)), 2)
+                else:
+                    reading[sensor_name] = round(base_value + variation, 2)
             
             sensor_history[device_id].append(reading)
+        
+        # Sort by index to ensure proper ordering (oldest to newest)
+        sensor_history[device_id].sort(key=lambda x: x["index"])
+        # Remove the index field as it's no longer needed
+        for reading in sensor_history[device_id]:
+            reading.pop("index", None)
     
     return sensor_history
 
@@ -133,7 +189,7 @@ def init_mock_data():
     """Initialize mock data for the application"""
     global devices, alerts, sensor_history, failures
     
-    # Initialize mock devices
+    # Initialize mock devices with more realistic base values
     devices = {
         "device_1": {
             "id": "device_1",
@@ -204,7 +260,7 @@ def init_mock_data():
     
     alerts = generate_mock_alerts()
     sensor_history = generate_sensor_history()
-    failures = generate_mock_failures()  # This will now always return a list, even if empty
+    failures = generate_mock_failures()
 
 # Initialize mock data when the server starts
 init_mock_data()
@@ -290,10 +346,29 @@ async def root():
 async def get_device_status():
     return devices
 
+# Function to simulate sensor data update
+def update_sensor_data_periodically():
+    for device_id in devices.keys():
+        # Simulate new sensor data
+        new_data = generate_sensor_history()[device_id]
+        
+        # Append new data to existing sensor history without altering previous data
+        existing_timestamps = {reading['raw_timestamp'] for reading in sensor_history[device_id]}
+        new_data = [reading for reading in new_data if reading['raw_timestamp'] not in existing_timestamps]
+        sensor_history[device_id].extend(new_data)
+        
+        # Sort by timestamp to ensure proper ordering
+        sensor_history[device_id].sort(key=lambda x: x['raw_timestamp'])
+
+# Schedule the periodic update every 30 seconds
+@app.on_event("startup")
+@repeat_every(seconds=30)
+async def periodic_sensor_update_task() -> None:
+    update_sensor_data_periodically()
+
 @app.get("/sensor-data")
 async def get_sensor_data():
-    # Update sensor history before returning
-    generate_sensor_history()
+    # Return the updated sensor history
     return sensor_history
 
 @app.get("/devices")
@@ -529,6 +604,20 @@ async def get_maintenance_costs():
         "corrective": 500,
         "total": 750
     }
+
+@app.get("/device-status/{device_id}")
+async def get_device_info(device_id: str):
+    if device_id not in devices:
+        raise HTTPException(status_code=404, detail="Device not found")
+    return devices[device_id]
+
+@app.get("/sensor-data/{device_id}")
+async def get_device_sensor_data(device_id: str):
+    if device_id not in devices:
+        raise HTTPException(status_code=404, detail="Device not found")
+    # Generate sensor history for the specific device
+    device_sensor_data = generate_sensor_history(device_id=device_id)
+    return device_sensor_data.get(device_id, [])
 
 if __name__ == "__main__":
     import uvicorn
