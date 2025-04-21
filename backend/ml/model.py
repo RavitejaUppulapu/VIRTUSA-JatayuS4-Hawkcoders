@@ -74,8 +74,9 @@ class PredictiveMaintenanceModel:
             'confusion_matrix': conf_matrix,
             'classification_report': report
         }
-        
+        print(metrics)
         return metrics
+    
     
     def predict(self, sequence):
         """Make predictions for a single sequence"""

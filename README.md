@@ -86,20 +86,47 @@ The application will be available at:
 
 ```
 PMBI/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
+├── frontend/                 # Frontend application
+│   ├── src/                 # Source files
+│   │   ├── components/     # React components
 │   │   │   ├── Dashboard.js
-│   │   │   ├── DeviceStatus.js
+│   │   │   ├── Alerts.js
+│   │   │   ├── FailureAnalysis.js
+│   │   │   ├── Layout.js
+│   │   │   ├── WhyChooseUs.js
 │   │   │   ├── Reports.js
-│   │   │   └── ...
-│   │   └── ...
-│   └── ...
-├── backend/
-│   ├── app.py
-│   ├── ml_model.py
-│   └── ...
-└── ...
+│   │   │   ├── Settings.js
+│   │   │   ├── AIChat.js
+│   │   │   ├── Navigation.js
+│   │   │   └── DeviceStatus.js
+│   │   ├── App.js
+│   │   ├── App.css
+│   │   ├── index.js
+│   │   ├── index.css
+│   │   └── reportWebVitals.js
+│   ├── public/             # Static files
+│   ├── js/                 # JavaScript utilities
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── nginx.conf
+│   └── Dockerfile
+├── backend/                 # Backend application
+│   ├── app.py             # Main FastAPI application
+│   ├── ml_model.py        # Machine learning model implementation
+│   ├── requirements.txt   # Python dependencies
+│   └── ml/                # Machine learning utilities
+├── data/                   # Data storage directory
+├── models/                 # Trained ML models
+├── data_generator.py       # Data generation script
+├── test_model.py          # Model testing script
+├── run.py                 # Main application runner
+├── requirements.txt       # Python dependencies
+├── Dockerfile            # Docker configuration
+├── docker-compose.yml    # Docker compose configuration
+├── .gitignore           # Git ignore rules
+├── training_history.png  # Training history visualization
+├── feature_importance.png # Feature importance visualization
+└── confusion_matrix.png  # Model performance visualization
 ```
 
 ## Key Features
