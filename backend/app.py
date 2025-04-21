@@ -406,7 +406,7 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
         log_df = pd.DataFrame(request.log_data)
         
         # Make predictions
-        predictions = model.(sensor_df, log_df)
+        predictions = model.predict(sensor_df, log_df)
         
         # Generate alerts
         new_alerts = []
