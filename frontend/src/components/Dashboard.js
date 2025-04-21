@@ -75,6 +75,7 @@ import {
   Download as DownloadIcon,
   Visibility as VisibilityIcon,
   CheckCircle as CheckCircleIcon,
+  Launch as LaunchIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { format } from "date-fns";
@@ -137,8 +138,8 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
-    const fetchData = async () => {
-      try {
+  const fetchData = async () => {
+    try {
       console.log("Fetching data from:", API_BASE_URL);
 
       // Test endpoint first
@@ -150,201 +151,77 @@ const Dashboard = () => {
         throw new Error("Could not connect to API server");
       }
 
-      // Fetch devices first to check data endpoints
-      const devicesRes = await axios.get(`${API_BASE_URL}/devices`);
-      console.log("Devices data:", devicesRes.data);
-
-      // Get the first device ID for sensor data
-      const firstDeviceId = devicesRes.data[0]?.id || "";
-
-      // Then fetch the rest of the data
+      // Fetch all required data in parallel
       const [
         alertsRes,
-        sensorRes,
-        predictionsRes,
-        maintenanceRes,
+        devicesRes,
         environmentalRes,
       ] = await Promise.all([
         axios.get(`${API_BASE_URL}/alerts`),
-        axios.get(`${API_BASE_URL}/sensor-data/${firstDeviceId}`),
-        axios.get(`${API_BASE_URL}/dashboard/predictions`),
-        axios.get(`${API_BASE_URL}/dashboard/maintenance-recommendations`),
+        axios.get(`${API_BASE_URL}/devices`),
         axios.get(`${API_BASE_URL}/dashboard/environmental`),
       ]);
 
-      console.log("Alerts data:", alertsRes.data);
-      console.log("Sensor data:", sensorRes.data);
-      console.log("Predictions data:", predictionsRes.data);
-      console.log("Maintenance data:", maintenanceRes.data);
-      console.log("Environmental data:", environmentalRes.data);
+      // Process alerts data with proper severity handling
+      const processedAlerts = (alertsRes.data || []).map((alert) => ({
+        id: alert.id || Math.random().toString(36).substr(2, 9),
+        type: alert.type || "system",
+        severity: alert.severity || "low",
+        message: alert.message || "No message available",
+        timestamp: alert.timestamp || new Date().toISOString(),
+        device_id: alert.device_id || "",
+        device_name: alert.device_name || getDeviceName(alert.device_id, devicesRes.data),
+        alert_type: alert.alert_type || "system",
+        status: alert.status || "unresolved",
+        component: alert.component || "Unknown",
+        location: alert.location || getDeviceLocation(alert.device_id, devicesRes.data),
+        acknowledged: alert.acknowledged || false,
+      }));
 
-      // Process alerts data - combine system and environmental alerts
-      const processedAlerts = [
-        ...(alertsRes.data || []).map((alert) => ({
-          id: alert.id || Math.random().toString(36).substr(2, 9),
-          type: alert.type || "system",
-          severity: alert.severity || "low",
-          message: alert.message || "No message available",
-          timestamp: alert.timestamp || new Date().toISOString(),
-          device_id: alert.device_id || "",
-          device_name:
-            alert.device_name ||
-            getDeviceName(alert.device_id, devicesRes.data),
-          alert_type: alert.alert_type || "system",
-          status: alert.status || "unresolved",
-          component: alert.component || "Unknown",
-          location:
-            alert.location ||
-            getDeviceLocation(alert.device_id, devicesRes.data),
-        })),
-        ...(environmentalRes.data || []).map((alert) => ({
-          id: alert.id || Math.random().toString(36).substr(2, 9),
-          type: "environmental",
-          severity: alert.severity || "warning",
-          message: alert.description || "No message available",
-          timestamp: alert.start_time || new Date().toISOString(),
-          device_id: alert.affected_devices?.[0] || "",
-          device_name: getDeviceName(
-            alert.affected_devices?.[0],
-            devicesRes.data
-          ),
-          alert_type: "environmental",
-          status: "unresolved",
-          component: alert.type || "Environmental",
-          location: getDeviceLocation(
-            alert.affected_devices?.[0],
-            devicesRes.data
-          ),
-          affected_devices: alert.affected_devices || [],
-        })),
-      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      // Process environmental alerts with proper severity handling
+      const processedEnvironmentalAlerts = (environmentalRes.data || []).map((alert) => ({
+        id: alert.id || Math.random().toString(36).substr(2, 9),
+        type: "environmental",
+        severity: alert.severity || "warning",
+        message: alert.description || "No message available",
+        timestamp: alert.start_time || new Date().toISOString(),
+        device_id: alert.affected_devices?.[0] || "",
+        device_name: getDeviceName(alert.affected_devices?.[0], devicesRes.data),
+        alert_type: "environmental",
+        status: "unresolved",
+        component: alert.type || "Environmental",
+        location: getDeviceLocation(alert.affected_devices?.[0], devicesRes.data),
+        affected_devices: alert.affected_devices || [],
+        acknowledged: alert.acknowledged || false,
+      }));
 
-      // Process predictions with alert information
-      const processedPredictions = (predictionsRes.data || []).map(
-        (prediction) => ({
-          id: prediction.id || Math.random().toString(36).substr(2, 9),
-          device_id: prediction.device_id || "",
-          device_name:
-            prediction.device_name ||
-            getDeviceName(prediction.device_id, devicesRes.data),
-          component: prediction.component || "Unknown Component",
-          failure_reason: prediction.failure_reason || "Unknown Failure",
-          risk_score: Number(prediction.risk_score) || 0,
-          confidence: Number(prediction.confidence) || 0.7,
-          failure_time:
-            prediction.failure_time ||
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          prediction_time:
-            prediction.prediction_time || new Date().toISOString(),
-          location:
-            prediction.location ||
-            getDeviceLocation(prediction.device_id, devicesRes.data),
-          system_type: prediction.system_type || "Unknown System",
-          failure_description:
-            prediction.failure_description || "No description available",
-          severity: getSeverityFromRiskScore(prediction.risk_score),
-          status: "unresolved",
-        })
+      // Combine and sort all alerts
+      const allAlerts = [...processedAlerts, ...processedEnvironmentalAlerts].sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
       );
 
-      // Process devices data
-      const processedDevices = (devicesRes.data || []).map((device) => ({
-        id: device.id || Math.random().toString(36).substr(2, 9),
-        name: device.name || "Unknown Device",
-        status: device.status || "unknown",
-        type: device.type || "unknown",
-        location: device.location || "Unknown Location",
-      }));
+      setAlerts(allAlerts);
+      setEnvironmentalAlerts(processedEnvironmentalAlerts);
+      setDevices(devicesRes.data || []);
 
-      // Process sensor data
-      const processedSensorData = (sensorRes.data || []).map((reading) => ({
-        timestamp: reading.timestamp || new Date().toISOString(),
-        device_id: reading.device_id || "",
-              temperature: Number(reading.temperature) || 0,
-              humidity: Number(reading.humidity) || 0,
-              vibration: Number(reading.vibration) || 0,
-        pressure: Number(reading.pressure) || 0,
-      }));
+      // Update statistics
+      const stats = {
+        total: allAlerts.length,
+        critical: allAlerts.filter(a => !a.acknowledged && a.severity === "critical").length,
+        warning: allAlerts.filter(a => !a.acknowledged && a.severity === "warning").length,
+        info: allAlerts.filter(a => !a.acknowledged && a.severity === "info").length,
+        resolved: allAlerts.filter(a => a.acknowledged).length,
+      };
+      setStatistics(stats);
 
-      // Process maintenance recommendations
-      const processedMaintenance = (maintenanceRes.data || []).map((rec) => ({
-        id: rec.id || Math.random().toString(36).substr(2, 9),
-        device_id: rec.device_id || "",
-        device_name: rec.device_name || "Unknown Device",
-        action: rec.action || "No action specified",
-        priority: rec.priority || "medium",
-        estimated_duration: Number(rec.estimated_duration) || 0,
-        required_resources: rec.required_resources || [],
-        status: rec.status || "pending",
-        created_at: rec.created_at || new Date().toISOString(),
-      }));
-
-      setDevices(processedDevices);
-      setAlerts(processedAlerts);
-      setSensorData(processedSensorData);
-      setPredictedFailures(processedPredictions);
-      setMaintenanceRecommendations(processedMaintenance);
-      setEnvironmentalAlerts(environmentalRes.data || []);
-
-      // Calculate device health from sensor data and predictions
-      const healthData = calculateDeviceHealth(
-        processedDevices,
-        processedSensorData,
-        processedPredictions
-      );
-      setDeviceHealth(healthData);
-
-      // Generate trend data if not available from backend
-      const trends = generateTrendData(processedPredictions);
-      setTrendData(trends);
-
-      // Update statistics with both predictions and alerts
-      updateStatistics(processedPredictions, processedAlerts);
-
-        setError(null);
-      } catch (error) {
-      console.error("Error fetching dashboard data:", {
-        message: error.message,
-        response: error.response,
-        status: error.response?.status,
-        data: error.response?.data,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          baseURL: error.config?.baseURL,
-        },
-      });
-
-      let errorMessage = "Failed to fetch dashboard data. ";
-
-      if (error.response) {
-        if (error.response.status === 404) {
-          errorMessage =
-            "API endpoints not found. Please check the server configuration.";
-        } else {
-          errorMessage += `Server Error: ${error.response.status} - ${
-            error.response.data?.message || "Unknown error"
-          }`;
-        }
-        console.error("Error response:", {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers,
-        });
-      } else if (error.request) {
-        errorMessage =
-          "Could not connect to the server. Please check your connection and server status.";
-        console.error("No response received:", error.request);
-      } else {
-        errorMessage += error.message;
-        console.error("Error setting up request:", error.message);
-      }
-
-      setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      setError("Failed to fetch alerts data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Helper function to calculate device health
   const calculateDeviceHealth = (devices, sensorData, predictions) => {
@@ -1257,112 +1134,168 @@ const Dashboard = () => {
     }
   };
 
-  // Add renderAlerts function
-  const getSeverityLabel = (severity) => {
-    if (!severity) return "UNKNOWN";
-    return (
-      typeof severity === "string" ? severity : String(severity)
-    ).toUpperCase();
+  // Update getSeverityNumber function to handle all cases
+  const getSeverityNumber = (severity) => {
+    // If severity is already a number, return it directly
+    if (typeof severity === 'number') {
+      return severity;
+    }
+
+    // If severity is undefined or null, return 0
+    if (!severity) {
+      return 0;
+    }
+
+    // Convert to string and then lowercase for string comparison
+    const severityStr = String(severity).toLowerCase();
+    
+    switch (severityStr) {
+      case 'critical':
+        return 8;
+      case 'high':
+        return 6;
+      case 'warning':
+        return 4;
+      case 'medium':
+        return 3;
+      case 'low':
+        return 2;
+      case 'info':
+        return 1;
+      default:
+        return 0;
+    }
   };
 
+  // Add getSeverityLabel function to handle severity display
+  const getSeverityLabel = (severity) => {
+    const severityNum = getSeverityNumber(severity);
+    if (severityNum >= 7) return 'CRITICAL';
+    if (severityNum >= 5) return 'HIGH';
+    if (severityNum >= 4) return 'WARNING';
+    if (severityNum >= 3) return 'MEDIUM';
+    if (severityNum >= 2) return 'LOW';
+    if (severityNum >= 1) return 'INFO';
+    return 'UNKNOWN';
+  };
+
+  // Update the renderAlerts function
   const renderAlerts = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Severity</TableCell>
-            <TableCell>Timestamp</TableCell>
-            <TableCell>Device</TableCell>
-            <TableCell>Component</TableCell>
-            <TableCell>Message</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {alerts.map((alert) => (
-            <TableRow
-              key={alert.id}
-              sx={{
-                backgroundColor:
-                  alert.severity === "critical"
-                    ? "error.light"
-                    : alert.severity === "warning"
-                    ? "warning.light"
-                    : alert.severity === "info"
-                    ? "info.light"
-                    : "inherit",
-                opacity: alert.status === "resolved" ? 0.7 : 1,
-              }}
-            >
-              <TableCell>
-                <Chip
-                  label={getSeverityLabel(alert.severity)}
-                  color={
-                    alert.severity === "critical"
-                      ? "error"
-                      : alert.severity === "warning"
-                      ? "warning"
-                      : "info"
-                  }
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                {new Date(alert.timestamp).toLocaleString()}
-              </TableCell>
-              <TableCell>{alert.device_name}</TableCell>
-              <TableCell>{alert.component}</TableCell>
-              <TableCell>{alert.message}</TableCell>
-              <TableCell>
-                <Chip
-                  label={
-                    alert.status
-                      ? String(alert.status).toUpperCase()
-                      : "UNRESOLVED"
-                  }
-                  color={alert.status === "resolved" ? "success" : "warning"}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                <Stack direction="row" spacing={1}>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleViewAlert(alert)}
-                    title="View Details"
-                  >
-                    <VisibilityIcon fontSize="small" />
-                  </IconButton>
-                  {(!alert.status || alert.status !== "resolved") && (
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewAlert(alert)}
-                      title="Mark as Resolved"
-                    >
-                      <CheckCircleIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Stack>
-              </TableCell>
-            </TableRow>
-          ))}
-          {alerts.length === 0 && (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h6">System Alerts</Typography>
+        <Box>
+          <Chip
+            label={`Critical: ${alerts.filter(a => !a.acknowledged && getSeverityNumber(a.severity) >= 7).length}`}
+            color="error"
+            sx={{ mr: 1, fontWeight: 'bold' }}
+          />
+          <Chip
+            label={`Warning: ${alerts.filter(a => !a.acknowledged && getSeverityNumber(a.severity) >= 4 && getSeverityNumber(a.severity) < 7).length}`}
+            color="warning"
+            sx={{ mr: 1, fontWeight: 'bold' }}
+          />
+          <Chip
+            label={`Info: ${alerts.filter(a => !a.acknowledged && getSeverityNumber(a.severity) < 4).length}`}
+            color="info"
+            sx={{ fontWeight: 'bold' }}
+          />
+        </Box>
+      </Box>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
             <TableRow>
-              <TableCell colSpan={7} align="center">
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ py: 2 }}
-                >
-                  No alerts to display
-                </Typography>
-              </TableCell>
+              <TableCell>Severity</TableCell>
+              <TableCell>Timestamp</TableCell>
+              <TableCell>Device</TableCell>
+              <TableCell>Component</TableCell>
+              <TableCell>Message</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="center">Actions</TableCell>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {alerts.map((alert) => {
+              const severityNum = getSeverityNumber(alert.severity);
+              const severityLabel = getSeverityLabel(alert.severity);
+              const severityColor = 
+                severityNum >= 7 ? 'error' :
+                severityNum >= 4 ? 'warning' : 'info';
+              
+              return (
+                <TableRow
+                  key={alert.id}
+                  sx={{
+                    backgroundColor: `${severityColor}.lighter`,
+                    '&:hover': {
+                      backgroundColor: `${severityColor}.light`,
+                    },
+                    opacity: alert.acknowledged ? 0.7 : 1,
+                  }}
+                >
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        label={`${severityLabel} (${severityNum})`}
+                        color={severityColor}
+                        size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
+                  <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
+                  <TableCell>{alert.component || 'Unknown'}</TableCell>
+                  <TableCell>{alert.message || 'No message'}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={alert.acknowledged ? "RESOLVED" : "UNRESOLVED"}
+                      color={alert.acknowledged ? "success" : "warning"}
+                      size="small"
+                      sx={{ fontWeight: 'bold' }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="View in Alerts Page">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate('/alerts', { state: { selectedAlert: alert } })}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <LaunchIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {!alert.acknowledged && (
+                        <Tooltip title="Mark as Resolved">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleResolveAlert(alert.id)}
+                            sx={{ color: 'success.main' }}
+                          >
+                            <CheckCircleIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {alerts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                    No alerts to display
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 
   if (loading) {
@@ -1412,79 +1345,29 @@ const Dashboard = () => {
         <Box>
           <Typography variant="h6" gutterBottom>
             Active Alerts and Issues
-      </Typography>
+          </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Paper sx={{ p: 2, mb: 3 }}>
-                <Box
-              sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">System Alerts</Typography>
-                  <Box>
-                    <Chip
-                      label={`Critical: ${
-                        alerts.filter((a) => a.severity === "critical").length
-                      }`}
-                      color="error"
-                      sx={{ mr: 1, cursor: "pointer" }}
-                      onClick={() =>
-                        navigate("/alerts", { state: { filter: "critical" } })
-                      }
-                    />
-                    <Chip
-                      label={`Warning: ${
-                        alerts.filter((a) => a.severity === "warning").length
-                      }`}
-                      color="warning"
-                      sx={{ mr: 1, cursor: "pointer" }}
-                      onClick={() =>
-                        navigate("/alerts", { state: { filter: "warning" } })
-                      }
-                    />
-                    <Chip
-                      label={`Info: ${
-                        alerts.filter((a) => a.severity === "info").length
-                      }`}
-                      color="info"
-                      sx={{ cursor: "pointer" }}
-                      onClick={() =>
-                        navigate("/alerts", { state: { filter: "info" } })
-                      }
-                    />
-                  </Box>
-                </Box>
                 {renderAlerts()}
-            </Paper>
-          </Grid>
+              </Paper>
+            </Grid>
             <Grid item xs={12}>
               <Paper sx={{ p: 2 }}>
-                <Box
-              sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                  }}
-                >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6">Environmental Issues</Typography>
                   <Button
                     variant="outlined"
                     startIcon={<NotificationsIcon />}
-                    onClick={() =>
-                      navigate("/alerts", {
-                        state: { filter: "environmental" },
-                      })
-                    }
+                    endIcon={<LaunchIcon />}
+                    onClick={() => navigate('/alerts', { state: { filter: 'environmental' } })}
                   >
                     View All Environmental Alerts
                   </Button>
                 </Box>
                 {renderEnvironmentalIssues()}
-            </Paper>
-          </Grid>
+              </Paper>
+            </Grid>
           </Grid>
         </Box>
       )}
@@ -1511,7 +1394,7 @@ const Dashboard = () => {
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
               {renderTrendAnalysis()}
-      </Grid>
+            </Grid>
             <Grid item xs={12} md={4}>
               {renderDeviceHealth()}
             </Grid>
@@ -1529,12 +1412,12 @@ const Dashboard = () => {
         {selectedFailure && (
           <>
             <DialogContent>
-      <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 Alert Details
-      </Typography>
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-      <Paper sx={{ p: 2 }}>
+                  <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       Device Information
                     </Typography>
@@ -1613,7 +1496,7 @@ const Dashboard = () => {
                           )
                         )}
                       </List>
-      </Paper>
+                    </Paper>
                   </Grid>
                 )}
               </Grid>
