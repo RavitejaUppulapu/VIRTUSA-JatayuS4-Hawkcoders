@@ -385,6 +385,12 @@ async def root():
 
 @app.get("/device-status")
 async def get_device_status():
+    # Update statuses before returning
+    predictions = await get_predictions()
+    for device_id in devices:
+        status_info = update_device_status(device_id, alerts, predictions)
+        devices[device_id]["status"] = status_info["status"]
+        devices[device_id]["status_message"] = status_info["message"]
     return devices
 
 # Function to simulate sensor data update
@@ -401,11 +407,106 @@ def update_sensor_data_periodically():
         # Sort by timestamp to ensure proper ordering
         sensor_history[device_id].sort(key=lambda x: x['raw_timestamp'])
 
+def get_status_message(status, device_id, alerts, predictions):
+    """Get detailed message for device status"""
+    try:
+        device_alerts = [a for a in alerts if a["device_id"] == device_id]
+        device_predictions = [p for p in predictions if p["device_id"] == device_id]
+        
+        if status == "critical":
+            critical_alerts = [a for a in device_alerts if a["severity"] >= 7 and not a.get("resolved", False)]
+            if critical_alerts:
+                return f"Critical alert(s) detected: {', '.join(a['message'] for a in critical_alerts)}"
+            return "Critical condition detected in device sensors"
+            
+        elif status == "warning":
+            warning_alerts = [a for a in device_alerts if 4 <= a["severity"] < 7 and not a.get("resolved", False)]
+            if warning_alerts:
+                return f"Warning alert(s) detected: {', '.join(a['message'] for a in warning_alerts)}"
+            return "High-risk prediction detected"
+            
+        elif status == "degraded":
+            return "Device showing signs of degradation"
+            
+        elif status == "operational":
+            return "Device operating normally"
+            
+        elif status == "maintenance required":
+            return "Scheduled maintenance required"
+            
+        elif status == "under maintenance":
+            return "Device currently under maintenance"
+            
+        elif status == "out of service":
+            return "Device is out of service"
+            
+        elif status == "disconnected":
+            return "Device is disconnected from the network"
+            
+        elif status == "standby":
+            return "Device is in standby mode"
+            
+        elif status == "testing":
+            return "Device is undergoing testing"
+            
+        elif status == "battery low":
+            return "Device battery level is low"
+            
+        elif status == "temperature alert":
+            return "Temperature threshold exceeded"
+            
+        elif status == "firmware update":
+            return "Firmware update required"
+            
+        elif status == "calibration needed":
+            return "Device requires calibration"
+            
+        else:
+            return "Status unknown"
+    except Exception as e:
+        print(f"Error getting status message: {str(e)}")
+        return "Unable to determine status message"
+
+def update_device_status(device_id, alerts, predictions):
+    """Update device status based on alerts only"""
+    try:
+        # Get all alerts for this device
+        device_alerts = [a for a in alerts if a["device_id"] == device_id]
+        
+        # Check for critical alerts
+        critical_alerts = [a for a in device_alerts if a["severity"] >= 7 and not a.get("resolved", False)]
+        if critical_alerts:
+            status = "critical"
+            message = get_status_message(status, device_id, alerts, predictions)
+            return {"status": status, "message": message}
+            
+        # Check for warning alerts
+        warning_alerts = [a for a in device_alerts if 4 <= a["severity"] < 7 and not a.get("resolved", False)]
+        if warning_alerts:
+            status = "warning"
+            message = get_status_message(status, device_id, alerts, predictions)
+            return {"status": status, "message": message}
+        
+        # Default to operational if no alerts
+        status = "operational"
+        message = get_status_message(status, device_id, alerts, predictions)
+        return {"status": status, "message": message}
+    except Exception as e:
+        print(f"Error updating device status: {str(e)}")
+        return {"status": "unknown", "message": "Unable to determine status"}
+
 # Schedule the periodic update every 30 seconds
 @app.on_event("startup")
 @repeat_every(seconds=30)
 async def periodic_sensor_update_task() -> None:
     update_sensor_data_periodically()
+    
+    # Update device statuses
+    predictions = await get_predictions()
+    for device_id in devices:
+        status_info = update_device_status(device_id, alerts, predictions)
+        devices[device_id]["status"] = status_info["status"]
+        devices[device_id]["status_message"] = status_info["message"]
 
 @app.get("/sensor-data")
 async def get_sensor_data():
@@ -1385,4 +1486,5 @@ async def get_maintenance_plan(alert_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000) 
     uvicorn.run(app, host="0.0.0.0", port=8000) 

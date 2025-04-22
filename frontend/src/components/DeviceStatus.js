@@ -12,6 +12,14 @@ import {
   Divider,
   IconButton,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  Button,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import {
   LineChart,
@@ -36,6 +44,9 @@ import {
   OilBarrel as OilIcon,
   Storage as DiskIcon,
   Timer as LatencyIcon,
+  FilterList as FilterListIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 
@@ -78,19 +89,8 @@ const getSensorIcon = (sensor) => {
 const getStatusStyle = (status) => {
   const colorMap = {
     "operational": { bgColor: "#4caf50", textColor: "#fff" },
-    "degraded": { bgColor: "#ff9800", textColor: "#fff" },
-    "warning": { bgColor: "#ffeb3b", textColor: "#000" },
+    "warning": { bgColor: "#ff9800", textColor: "#fff" },
     "critical": { bgColor: "#f44336", textColor: "#fff" },
-    "maintenance required": { bgColor: "#ff5722", textColor: "#fff" },
-    "under maintenance": { bgColor: "#2196f3", textColor: "#fff" },
-    "out of service": { bgColor: "#9e9e9e", textColor: "#fff" },
-    "disconnected": { bgColor: "#757575", textColor: "#fff" },
-    "standby": { bgColor: "#607d8b", textColor: "#fff" },
-    "testing": { bgColor: "#9c27b0", textColor: "#fff" },
-    "battery low": { bgColor: "#fbc02d", textColor: "#000" },
-    "temperature alert": { bgColor: "#e53935", textColor: "#fff" },
-    "firmware update": { bgColor: "#00bcd4", textColor: "#fff" },
-    "calibration needed": { bgColor: "#795548", textColor: "#fff" },
     "unknown": { bgColor: "#e0e0e0", textColor: "#000" },
   };
   const key = status.toLowerCase();
@@ -103,6 +103,8 @@ const DeviceStatus = () => {
   const [devices, setDevices] = useState([]);
   const [sensorData, setSensorData] = useState({});
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,6 +115,7 @@ const DeviceStatus = () => {
         ]);
         setDevices(Object.values(devicesResponse.data));
         setSensorData(sensorResponse.data);
+        setLastUpdate(new Date());
         setError(null);
       } catch (err) {
         setError("Failed to fetch device data");
@@ -175,9 +178,47 @@ const DeviceStatus = () => {
     setStatusFilter(event.target.value);
   };
 
-  const filteredDevices = devices.filter(device =>
-    statusFilter === '' || device.status.toLowerCase() === statusFilter.toLowerCase()
-  );
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const handleClearFilters = () => {
+    setStatusFilter('');
+    setSearchQuery('');
+  };
+
+  const filteredDevices = devices.filter(device => {
+    const matchesStatus = statusFilter === '' || device.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesSearch = searchQuery === '' || 
+      device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      device.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      device.type.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  // Add status change animation
+  const getStatusTransition = (device) => {
+    const statusStyle = getStatusStyle(device.status);
+    return {
+      ...statusStyle,
+      transition: 'all 0.3s ease-in-out',
+      animation: 'statusChange 0.5s ease-in-out'
+    };
+  };
+
+  // Add CSS for status change animation
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes statusChange {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
 
   if (loading) {
     return (
@@ -201,32 +242,124 @@ const DeviceStatus = () => {
         <Typography variant="h4" fontWeight="bold" color="primary" gutterBottom>
           Device Status
         </Typography>
-        <Box>
-          <Typography variant="subtitle1" fontWeight="bold">Filter by Status:</Typography>
-          <select value={statusFilter} onChange={handleStatusFilterChange}>
-            <option value="">All</option>
-            <option value="operational">Operational</option>
-            <option value="degraded">Degraded</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
-            <option value="maintenance required">Maintenance Required</option>
-            <option value="under maintenance">Under Maintenance</option>
-            <option value="out of service">Out of Service</option>
-            <option value="disconnected">Disconnected</option>
-            <option value="standby">Standby</option>
-            <option value="testing">Testing</option>
-            <option value="battery low">Battery Low</option>
-            <option value="temperature alert">Temperature Alert</option>
-            <option value="firmware update">Firmware Update</option>
-            <option value="calibration needed">Calibration Needed</option>
-            <option value="unknown">Unknown</option>
-          </select>
-        </Box>
+        <Typography variant="caption" color="text.secondary">
+          Last Updated: {lastUpdate.toLocaleString()}
+        </Typography>
       </Box>
+
+      {/* New Filter UI */}
+      <Paper 
+        elevation={2} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          backgroundColor: 'white',
+          borderRadius: 2
+        }}
+      >
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Status</InputLabel>
+            <Select
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              label="Filter by Status"
+              size="small"
+              startAdornment={
+                <InputAdornment position="start">
+                  <FilterListIcon color="action" />
+                </InputAdornment>
+              }
+            >
+              <MenuItem value="">All Statuses</MenuItem>
+              <MenuItem value="operational">
+                <Chip 
+                  label="Operational" 
+                  size="small" 
+                  sx={{ 
+                    bgcolor: '#4caf50', 
+                    color: 'white',
+                    width: '100%'
+                  }} 
+                />
+              </MenuItem>
+              <MenuItem value="warning">
+                <Chip 
+                  label="Warning" 
+                  size="small" 
+                  sx={{ 
+                    bgcolor: '#ff9800', 
+                    color: 'white',
+                    width: '100%'
+                  }} 
+                />
+              </MenuItem>
+              <MenuItem value="critical">
+                <Chip 
+                  label="Critical" 
+                  size="small" 
+                  sx={{ 
+                    bgcolor: '#f44336', 
+                    color: 'white',
+                    width: '100%'
+                  }} 
+                />
+              </MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            size="small"
+            placeholder="Search devices..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            sx={{ flexGrow: 1 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => setSearchQuery('')}
+                    edge="end"
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
+
+          <Button
+            variant="outlined"
+            onClick={handleClearFilters}
+            startIcon={<ClearIcon />}
+            size="small"
+            sx={{ minWidth: 120 }}
+          >
+            Clear Filters
+          </Button>
+        </Stack>
+
+        {/* Filter Summary */}
+        {(statusFilter || searchQuery) && (
+          <Box mt={2}>
+            <Typography variant="caption" color="text.secondary">
+              Showing {filteredDevices.length} of {devices.length} devices
+              {statusFilter && ` • Status: ${statusFilter}`}
+              {searchQuery && ` • Search: "${searchQuery}"`}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
 
       <Grid container spacing={3}>
         {filteredDevices.map((device) => {
-          const statusStyle = getStatusStyle(device.status);
+          const statusStyle = getStatusTransition(device);
           return (
             <Grid item xs={12} sm={12} md={6} lg={4} key={device.id}>
               <Card
@@ -245,17 +378,35 @@ const DeviceStatus = () => {
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                     <Typography variant="h6" fontWeight="bold" sx={{ flexGrow: 1 }}>{device.name}</Typography>
-                    <Chip
-                      label={device.status}
-                      size="small"
-                      sx={{
-                        fontWeight: "bold",
-                        color: statusStyle.textColor,
-                        backgroundColor: statusStyle.bgColor,
-                        textTransform: "capitalize",
-                        ml: 'auto'
+                    <Tooltip 
+                      title={device.status_message || "No status message available"}
+                      arrow
+                      placement="top"
+                      componentsProps={{
+                        tooltip: {
+                          sx: {
+                            bgcolor: statusStyle.bgColor,
+                            color: statusStyle.textColor,
+                            '& .MuiTooltip-arrow': {
+                              color: statusStyle.bgColor,
+                            },
+                          },
+                        },
                       }}
-                    />
+                    >
+                      <Chip
+                        label={device.status}
+                        size="small"
+                        sx={{
+                          fontWeight: "bold",
+                          color: statusStyle.textColor,
+                          backgroundColor: statusStyle.bgColor,
+                          textTransform: "capitalize",
+                          ml: 'auto',
+                          cursor: 'help'
+                        }}
+                      />
+                    </Tooltip>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
                     Location: <strong>{device.location}</strong> | Type: <strong>{device.type}</strong>
@@ -368,9 +519,6 @@ const DeviceStatus = () => {
                   </Box>
 
                   <Divider sx={{ my: 2 }} />
-                  <Typography variant="caption" color="text.secondary">
-                    Last Updated: {new Date().toLocaleString()}
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
