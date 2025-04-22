@@ -1584,6 +1584,16 @@ const Dashboard = () => {
     </TableContainer>
   );
 
+  const formatPredictionTime = (timestamp) => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString();
+    } catch (error) {
+      console.error("Error formatting prediction time:", error);
+      return "Invalid date";
+    }
+  };
+
   const renderPredictions = () => (
     <Box>
       <TableContainer component={Paper}>
@@ -1677,7 +1687,7 @@ const Dashboard = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    {new Date(alert.timestamp).toLocaleString()}
+                    {formatPredictionTime(alert.timestamp)}
                   </TableCell>
                   <TableCell>{alert.device_name || "Unknown Device"}</TableCell>
                   <TableCell>{alert.message || "No message"}</TableCell>
@@ -1691,9 +1701,7 @@ const Dashboard = () => {
                   </TableCell>
                   <TableCell>
                     {analysis
-                      ? new Date(
-                          analysis.predicted_failure_date
-                        ).toLocaleDateString()
+                      ? formatPredictionTime(analysis.predicted_failure_date)
                       : "Loading..."}
                   </TableCell>
                   <TableCell>
@@ -1944,17 +1952,243 @@ const Dashboard = () => {
       )}
 
       {selectedTab === 3 && (
-        <>
-          {renderStatisticsCards()}
+        <Box>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              {renderTrendAnalysis()}
+            {/* Recent Developments - Now First */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Recent Developments
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Timestamp</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[...alerts, ...environmentalAlerts]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .slice(0, 5)
+                        .map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              {new Date(item.timestamp).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={item.type || "Alert"}
+                                color={
+                                  item.type === "environmental"
+                                    ? "info"
+                                    : getSeverityColor(item.severity)
+                                }
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>{item.message || item.description}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={item.acknowledged ? "Resolved" : "Active"}
+                                color={item.acknowledged ? "success" : "warning"}
+                                size="small"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
             </Grid>
-            <Grid item xs={12} md={4}>
-              {renderDeviceHealth()}
+
+            {/* Alert Statistics - Now Second */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Alert Statistics
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={3}>
+                    <Card sx={{ bgcolor: "#ffebee" }}>
+                      <CardContent>
+                        <Typography variant="h6" color="error">
+                          Critical Alerts
+                        </Typography>
+                        <Typography variant="h4">
+                          {alerts.filter((a) => !a.acknowledged && a.severity >= 7).length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Card sx={{ bgcolor: "#fff3e0" }}>
+                      <CardContent>
+                        <Typography variant="h6" color="warning.dark">
+                          Warning Alerts
+                        </Typography>
+                        <Typography variant="h4">
+                          {alerts.filter((a) => !a.acknowledged && a.severity >= 4 && a.severity < 7).length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Card sx={{ bgcolor: "#e3f2fd" }}>
+                      <CardContent>
+                        <Typography variant="h6" color="info.dark">
+                          Info Alerts
+                        </Typography>
+                        <Typography variant="h4">
+                          {alerts.filter((a) => !a.acknowledged && a.severity < 4).length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <Card sx={{ bgcolor: "#e8f5e9" }}>
+                      <CardContent>
+                        <Typography variant="h6" color="success.dark">
+                          Resolved Alerts
+                        </Typography>
+                        <Typography variant="h4">
+                          {alerts.filter((a) => a.acknowledged).length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+
+            {/* Device Status Overview - Now Third */}
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Device Status Overview
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Device</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Location</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {devices.map((device) => (
+                        <TableRow key={device.id}>
+                          <TableCell>{device.name}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={device.status}
+                              color={
+                                device.status === "operational"
+                                  ? "success"
+                                  : device.status === "warning"
+                                  ? "warning"
+                                  : "error"
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>{device.location}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
+            </Grid>
+
+            {/* Active Alerts Overview - Now Fourth */}
+            <Grid item xs={12} md={6}>
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                  Active Alerts Overview
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Severity</TableCell>
+                        <TableCell>Device</TableCell>
+                        <TableCell>Message</TableCell>
+                        <TableCell>Timestamp</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {alerts
+                        .filter((alert) => !alert.acknowledged && !alert.resolved)
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .slice(0, 5)
+                        .map((alert) => (
+                          <TableRow 
+                            key={alert.id}
+                            sx={{
+                              backgroundColor: 
+                                getSeverityNumber(alert.severity) >= 7
+                                  ? "error.lighter"
+                                  : getSeverityNumber(alert.severity) >= 4
+                                  ? "warning.lighter"
+                                  : "info.lighter"
+                            }}
+                          >
+                            <TableCell>
+                              <Chip
+                                label={getSeverityLabel(alert.severity)}
+                                color={getSeverityColor(alert.severity)}
+                                size="small"
+                                sx={{
+                                  fontWeight: "bold",
+                                  bgcolor:
+                                    getSeverityNumber(alert.severity) >= 7
+                                      ? "#d32f2f"
+                                      : getSeverityNumber(alert.severity) >= 4
+                                      ? "#ed6c02"
+                                      : "#0288d1",
+                                  color: "white",
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight="medium">
+                                {alert.device_name || getDeviceName(alert.device_id, devices)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {alert.message}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(alert.timestamp).toLocaleString()}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      {alerts.filter((alert) => !alert.acknowledged && !alert.resolved).length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                              No active alerts at the moment
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Paper>
             </Grid>
           </Grid>
-        </>
+        </Box>
       )}
 
       {/* Alert Details Dialog */}

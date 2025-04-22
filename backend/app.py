@@ -385,13 +385,17 @@ async def root():
 
 @app.get("/device-status")
 async def get_device_status():
-    # Update statuses before returning
-    predictions = await get_predictions()
-    for device_id in devices:
-        status_info = update_device_status(device_id, alerts, predictions)
-        devices[device_id]["status"] = status_info["status"]
-        devices[device_id]["status_message"] = status_info["message"]
-    return devices
+    """Get current status of all devices"""
+    try:
+        # Update statuses before returning
+        predictions = await get_predictions()
+        for device_id in devices:
+            status_info = update_device_status(device_id, alerts, predictions)
+            devices[device_id]["status"] = status_info["status"]
+            devices[device_id]["status_message"] = status_info["message"]
+        return devices
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Function to simulate sensor data update
 def update_sensor_data_periodically():
@@ -529,39 +533,46 @@ async def create_device(device: Device):
     return device
 
 @app.get("/alerts")
-async def get_alerts(severity: Optional[str] = None, device_id: Optional[str] = None, include_resolved: bool = True):
-    filtered_alerts = alerts
-    if severity:
-        if severity.lower() == "critical":
-            filtered_alerts = [a for a in alerts if a["type"] == "critical"]
-        elif severity.lower() == "warning":
-            filtered_alerts = [a for a in alerts if a["type"] == "warning"]
-    if device_id:
-        filtered_alerts = [a for a in filtered_alerts if a["device_id"] == device_id]
-    
-    # Only filter out resolved alerts if explicitly requested
-    if not include_resolved:
-        filtered_alerts = [a for a in filtered_alerts if not a.get("resolved", False)]
-    
-    # Format timestamps and ensure resolution information is included
-    for alert in filtered_alerts:
-        if alert.get("resolved", False):
-            # Ensure resolution information is properly formatted
-            alert["resolved_at"] = alert.get("resolution_timestamp", "Unknown")
-            if alert["resolved_at"] != "Unknown":
-                try:
-                    ts = datetime.fromisoformat(alert["resolved_at"].replace('Z', '+00:00'))
-                    alert["resolved_at"] = ts.strftime("%m/%d/%Y, %I:%M:%S %p")
-                except:
-                    alert["resolved_at"] = "Unknown"
-            
-            # Ensure resolution notes are properly included
-            alert["resolution_notes"] = alert.get("resolution_notes", "No notes provided")
-        else:
-            alert["resolved_at"] = "Not resolved"
-            alert["resolution_notes"] = "Not resolved"
-    
-    return filtered_alerts
+async def get_alerts(
+    severity: Optional[str] = None,
+    device_id: Optional[str] = None,
+    include_resolved: bool = True
+):
+    """Get all alerts with optional filtering"""
+    try:
+        filtered_alerts = alerts
+        if severity:
+            if severity.lower() == "critical":
+                filtered_alerts = [a for a in alerts if a["severity"] >= 7]
+            elif severity.lower() == "warning":
+                filtered_alerts = [a for a in alerts if 4 <= a["severity"] < 7]
+            elif severity.lower() == "info":
+                filtered_alerts = [a for a in alerts if a["severity"] < 4]
+        
+        if device_id:
+            filtered_alerts = [a for a in filtered_alerts if a["device_id"] == device_id]
+        
+        if not include_resolved:
+            filtered_alerts = [a for a in filtered_alerts if not a.get("acknowledged", False)]
+        
+        # Format timestamps and ensure resolution information is included
+        for alert in filtered_alerts:
+            if alert.get("acknowledged", False):
+                alert["resolved_at"] = alert.get("resolution_timestamp", "Unknown")
+                if alert["resolved_at"] != "Unknown":
+                    try:
+                        ts = datetime.fromisoformat(alert["resolved_at"].replace('Z', '+00:00'))
+                        alert["resolved_at"] = ts.strftime("%m/%d/%Y, %I:%M:%S %p")
+                    except:
+                        alert["resolved_at"] = "Unknown"
+                alert["resolution_notes"] = alert.get("resolution_notes", "No notes provided")
+            else:
+                alert["resolved_at"] = "Not resolved"
+                alert["resolution_notes"] = "Not resolved"
+        
+        return filtered_alerts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/predict", response_model=List[AlertResponse])
 async def predict(request: PredictionRequest, background_tasks: BackgroundTasks):
@@ -868,8 +879,13 @@ async def get_predictions():
                 # Extract sensor values from the data
                 sensor_values = []
                 for reading in recent_data:
-                    if isinstance(reading, dict) and 'sensors' in reading:
-                        sensor_values.append(reading['sensors'])
+                    if isinstance(reading, dict):
+                        # Create a clean sensor reading without timestamp
+                        sensor_reading = {}
+                        for key, value in reading.items():
+                            if key not in ['timestamp', 'raw_timestamp']:
+                                sensor_reading[key] = value
+                        sensor_values.append(sensor_reading)
                     else:
                         # If no sensor data, use default values
                         sensor_values.append({
@@ -899,12 +915,17 @@ async def get_predictions():
                 elif device_data["type"].lower() == "storage":
                     effects = ["Data access", "Storage capacity", "Read/write operations"]
                 
+                # Create prediction with proper timestamp handling
+                current_time = datetime.now()
+                prediction_time = current_time.isoformat()
+                failure_time = (current_time + timedelta(days=time_to_failure)).isoformat()
+                
                 predictions.append({
                     "id": str(uuid.uuid4()),
                     "device_id": device_id,
                     "device_name": device_data["name"],
-                    "prediction_time": datetime.now().isoformat(),
-                    "failure_time": (datetime.now() + timedelta(days=time_to_failure)).isoformat(),
+                    "prediction_time": prediction_time,
+                    "failure_time": failure_time,
                     "location": device_data["location"],
                     "severity": prediction,
                     "risk_score": prediction * 100,
@@ -1484,7 +1505,41 @@ async def get_maintenance_plan(alert_id: str):
             "skill_level": "Basic"
         }
 
+@app.get("/dashboard/statistics")
+async def get_dashboard_statistics():
+    """Get dashboard statistics"""
+    try:
+        # Calculate statistics
+        total_alerts = len(alerts)
+        critical_alerts = len([a for a in alerts if a["severity"] >= 7 and not a.get("acknowledged", False)])
+        warning_alerts = len([a for a in alerts if 4 <= a["severity"] < 7 and not a.get("acknowledged", False)])
+        info_alerts = len([a for a in alerts if a["severity"] < 4 and not a.get("acknowledged", False)])
+        resolved_alerts = len([a for a in alerts if a.get("acknowledged", False)])
+        
+        # Calculate device statistics
+        total_devices = len(devices)
+        operational_devices = len([d for d in devices.values() if d["status"] == "operational"])
+        warning_devices = len([d for d in devices.values() if d["status"] == "warning"])
+        critical_devices = len([d for d in devices.values() if d["status"] == "critical"])
+        
+        return {
+            "alerts": {
+                "total": total_alerts,
+                "critical": critical_alerts,
+                "warning": warning_alerts,
+                "info": info_alerts,
+                "resolved": resolved_alerts
+            },
+            "devices": {
+                "total": total_devices,
+                "operational": operational_devices,
+                "warning": warning_devices,
+                "critical": critical_devices
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
     uvicorn.run(app, host="0.0.0.0", port=8000) 
