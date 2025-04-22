@@ -363,34 +363,20 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "healthy":
-      case "operational":
-        return "#4caf50";
-      case "warning":
-      case "standby":
-        return "#ff9800";
-      case "critical":
-        return "#dc3545";
-      default:
-        return "#0288d1";
-    }
+  const getSeverityColor = (severity) => {
+    const severityNum =
+      typeof severity === "number" ? severity : getSeverityNumber(severity);
+    if (severityNum >= 7) return "error";
+    if (severityNum >= 4) return "warning";
+    return "info";
   };
 
-  const getStatusBgColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "healthy":
-      case "operational":
-        return "#e8f5e9";
-      case "warning":
-      case "standby":
-        return "#fff3e0";
-      case "critical":
-        return "#ffebee";
-      default:
-        return "#e3f2fd";
-    }
+  const getSeverityLabel = (severity) => {
+    const severityNum =
+      typeof severity === "number" ? severity : getSeverityNumber(severity);
+    let label =
+      severityNum >= 7 ? "Critical" : severityNum >= 4 ? "Warning" : "Info";
+    return `${label} (${severityNum})`;
   };
 
   const sortPredictedFailures = (failures) => {
@@ -1203,12 +1189,18 @@ const Dashboard = () => {
                     <TableCell>
                       <Chip
                         label={getSeverityLabel(alert.severity)}
-                        color={
-                          getSeverityNumber(alert.severity) >= 7
-                            ? "error"
-                            : "warning"
-                        }
+                        color={getSeverityColor(alert.severity)}
                         size="small"
+                        sx={{
+                          fontWeight: "bold",
+                          bgcolor:
+                            getSeverityNumber(alert.severity) >= 7
+                              ? "#d32f2f"
+                              : getSeverityNumber(alert.severity) >= 4
+                              ? "#ed6c02"
+                              : "#0288d1",
+                          color: "white",
+                        }}
                       />
                     </TableCell>
                     <TableCell>
@@ -1354,12 +1346,18 @@ const Dashboard = () => {
                   <TableCell>
                     <Chip
                       label={getSeverityLabel(alert.severity)}
-                      color={
-                        getSeverityNumber(alert.severity) >= 7
-                          ? "error"
-                          : "warning"
-                      }
+                      color={getSeverityColor(alert.severity)}
                       size="small"
+                      sx={{
+                        fontWeight: "bold",
+                        bgcolor:
+                          getSeverityNumber(alert.severity) >= 7
+                            ? "#d32f2f"
+                            : getSeverityNumber(alert.severity) >= 4
+                            ? "#ed6c02"
+                            : "#0288d1",
+                        color: "white",
+                      }}
                     />
                   </TableCell>
                   <TableCell>
@@ -1492,13 +1490,6 @@ const Dashboard = () => {
     return <InfoIcon color="info" fontSize="small" />;
   };
 
-  const getSeverityLabel = (severity) => {
-    const severityNum = getSeverityNumber(severity);
-    if (severityNum >= 7) return "Critical";
-    if (severityNum >= 4) return "Warning";
-    return "Info";
-  };
-
   const renderAlerts = () => (
     <TableContainer component={Paper}>
       <Table>
@@ -1558,10 +1549,19 @@ const Dashboard = () => {
               <TableRow key={alert.id}>
                 <TableCell>
                   <Chip
-                    label={`${severityLabel}`}
+                    label={severityLabel}
                     color={severityColor}
                     size="small"
-                    sx={{ fontWeight: "bold" }}
+                    sx={{
+                      fontWeight: "bold",
+                      bgcolor:
+                        getSeverityNumber(alert.severity) >= 7
+                          ? "#d32f2f"
+                          : getSeverityNumber(alert.severity) >= 4
+                          ? "#ed6c02"
+                          : "#0288d1",
+                      color: "white",
+                    }}
                   />
                 </TableCell>
                 <TableCell>
@@ -1660,19 +1660,21 @@ const Dashboard = () => {
                   }}
                 >
                   <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Chip
-                        label={`${severityLabel}`}
-                        color={severityColor}
-                        size="small"
-                        sx={{ fontWeight: "bold" }}
-                      />
-                      {typeof alert.severity === "number" && (
-                        <Typography variant="caption" color="textSecondary">
-                          ({alert.severity})
-                        </Typography>
-                      )}
-                    </Box>
+                    <Chip
+                      label={severityLabel}
+                      color={severityColor}
+                      size="small"
+                      sx={{
+                        fontWeight: "bold",
+                        bgcolor:
+                          getSeverityNumber(alert.severity) >= 7
+                            ? "#d32f2f"
+                            : getSeverityNumber(alert.severity) >= 4
+                            ? "#ed6c02"
+                            : "#0288d1",
+                        color: "white",
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     {new Date(alert.timestamp).toLocaleString()}
