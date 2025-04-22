@@ -41,6 +41,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Collapse,
+  DialogTitle,
+  TableSortLabel,
 } from "@mui/material";
 import {
   LineChart,
@@ -77,6 +79,8 @@ import {
   Visibility as VisibilityIcon,
   CheckCircle as CheckCircleIcon,
   Launch as LaunchIcon,
+  ExpandLess as ExpandLessIcon,
+  Circle as CircleIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import { format } from "date-fns";
@@ -142,6 +146,12 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
+  const [expandedAlerts, setExpandedAlerts] = useState({});
+  const [maintenancePlans, setMaintenancePlans] = useState({});
+
+  const [orderBy, setOrderBy] = useState("severity");
+  const [order, setOrder] = useState("desc");
+
   const fetchData = async () => {
     try {
       console.log("Fetching data from:", API_BASE_URL);
@@ -156,11 +166,7 @@ const Dashboard = () => {
       }
 
       // Fetch all required data in parallel
-      const [
-        alertsRes,
-        devicesRes,
-        environmentalRes,
-      ] = await Promise.all([
+      const [alertsRes, devicesRes, environmentalRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/alerts`),
         axios.get(`${API_BASE_URL}/devices`),
         axios.get(`${API_BASE_URL}/dashboard/environmental`),
@@ -174,35 +180,51 @@ const Dashboard = () => {
         message: alert.message || "No message available",
         timestamp: alert.timestamp || new Date().toISOString(),
         device_id: alert.device_id || "",
-        device_name: alert.device_name || getDeviceName(alert.device_id, devicesRes.data),
+        device_name:
+          alert.device_name || getDeviceName(alert.device_id, devicesRes.data),
         alert_type: alert.alert_type || "system",
         status: alert.status || "unresolved",
         component: alert.component || "Unknown",
-        location: alert.location || getDeviceLocation(alert.device_id, devicesRes.data),
+        location:
+          alert.location || getDeviceLocation(alert.device_id, devicesRes.data),
         acknowledged: alert.acknowledged || false,
+        resolution_notes:
+          alert.resolution_notes || alert.resolutionNotes || null,
+        resolution_timestamp:
+          alert.resolution_timestamp || alert.resolutionTimestamp || null,
+        resolved_by: alert.resolved_by || alert.resolvedBy || null,
       }));
 
       // Process environmental alerts with proper severity handling
-      const processedEnvironmentalAlerts = (environmentalRes.data || []).map((alert) => ({
-        id: alert.id || Math.random().toString(36).substr(2, 9),
-        type: "environmental",
-        severity: alert.severity || "warning",
-        message: alert.description || "No message available",
-        timestamp: alert.start_time || new Date().toISOString(),
-        device_id: alert.affected_devices?.[0] || "",
-        device_name: getDeviceName(alert.affected_devices?.[0], devicesRes.data),
-        alert_type: "environmental",
-        status: "unresolved",
-        component: alert.type || "Environmental",
-        location: getDeviceLocation(alert.affected_devices?.[0], devicesRes.data),
-        affected_devices: alert.affected_devices || [],
-        acknowledged: alert.acknowledged || false,
-      }));
+      const processedEnvironmentalAlerts = (environmentalRes.data || []).map(
+        (alert) => ({
+          id: alert.id || Math.random().toString(36).substr(2, 9),
+          type: "environmental",
+          severity: alert.severity || "warning",
+          message: alert.description || "No message available",
+          timestamp: alert.start_time || new Date().toISOString(),
+          device_id: alert.affected_devices?.[0] || "",
+          device_name: getDeviceName(
+            alert.affected_devices?.[0],
+            devicesRes.data
+          ),
+          alert_type: "environmental",
+          status: "unresolved",
+          component: alert.type || "Environmental",
+          location: getDeviceLocation(
+            alert.affected_devices?.[0],
+            devicesRes.data
+          ),
+          affected_devices: alert.affected_devices || [],
+          acknowledged: alert.acknowledged || false,
+        })
+      );
 
       // Combine and sort all alerts
-      const allAlerts = [...processedAlerts, ...processedEnvironmentalAlerts].sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      );
+      const allAlerts = [
+        ...processedAlerts,
+        ...processedEnvironmentalAlerts,
+      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
       setAlerts(allAlerts);
       setEnvironmentalAlerts(processedEnvironmentalAlerts);
@@ -211,25 +233,38 @@ const Dashboard = () => {
       // Fetch analysis data for all alerts
       const analysisPromises = allAlerts.map(async (alert) => {
         try {
-          const response = await axios.get(`${API_BASE_URL}/predictions/analysis/${alert.id}`);
+          const response = await axios.get(
+            `${API_BASE_URL}/predictions/analysis/${alert.id}`
+          );
           return { [alert.id]: response.data };
         } catch (error) {
-          console.error(`Error fetching analysis for alert ${alert.id}:`, error);
+          console.error(
+            `Error fetching analysis for alert ${alert.id}:`,
+            error
+          );
           return { [alert.id]: null };
         }
       });
 
       const analysisResults = await Promise.all(analysisPromises);
-      const combinedAnalysisData = analysisResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      const combinedAnalysisData = analysisResults.reduce(
+        (acc, curr) => ({ ...acc, ...curr }),
+        {}
+      );
       setAnalysisData(combinedAnalysisData);
 
       // Update statistics
       const stats = {
         total: allAlerts.length,
-        critical: allAlerts.filter(a => !a.acknowledged && a.severity === "critical").length,
-        warning: allAlerts.filter(a => !a.acknowledged && a.severity === "warning").length,
-        info: allAlerts.filter(a => !a.acknowledged && a.severity === "info").length,
-        resolved: allAlerts.filter(a => a.acknowledged).length,
+        critical: allAlerts.filter(
+          (a) => !a.acknowledged && a.severity === "critical"
+        ).length,
+        warning: allAlerts.filter(
+          (a) => !a.acknowledged && a.severity === "warning"
+        ).length,
+        info: allAlerts.filter((a) => !a.acknowledged && a.severity === "info")
+          .length,
+        resolved: allAlerts.filter((a) => a.acknowledged).length,
       };
       setStatistics(stats);
 
@@ -1063,162 +1098,386 @@ const Dashboard = () => {
   );
 
   const MaintenanceTab = () => {
-    const navigate = useNavigate();
-    const [expanded, setExpanded] = useState({});
+    const [expandedAlerts, setExpandedAlerts] = useState({});
+    const [maintenancePlans, setMaintenancePlans] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+
+    // Separate alerts into unresolved and resolved
+    const unresolvedAlerts = alerts.filter((alert) => !alert.acknowledged);
+    const resolvedAlerts = alerts.filter((alert) => alert.acknowledged);
+
+    useEffect(() => {
+      // Fetch maintenance plans for unresolved alerts
+      const fetchMaintenancePlans = async () => {
+        setLoading(true);
+        try {
+          const plans = {};
+          for (const alert of unresolvedAlerts) {
+            const response = await axios.get(
+              `${API_BASE_URL}/maintenance/plan/${alert.id}`
+            );
+            plans[alert.id] = response.data;
+          }
+          setMaintenancePlans(plans);
+        } catch (error) {
+          console.error("Error fetching maintenance plans:", error);
+        }
+        setLoading(false);
+      };
+
+      fetchMaintenancePlans();
+    }, [unresolvedAlerts]);
 
     const toggleExpand = (alertId) => {
-      setExpanded(prev => ({
+      setExpandedAlerts((prev) => ({
         ...prev,
-        [alertId]: !prev[alertId]
+        [alertId]: !prev[alertId],
       }));
     };
 
-    const unresolvedAlerts = alerts.filter(alert => !alert.resolved);
-    const resolvedAlerts = alerts.filter(alert => alert.resolved);
-
     const navigateToAlerts = (alertId) => {
-      navigate(`/alerts/${alertId}`);
+      navigate("/alerts", { state: { selectedAlertId: alertId } });
+    };
+
+    const handleViewDetails = (alert) => {
+      setSelectedAlert(alert);
+      setShowDetailsDialog(true);
     };
 
     return (
       <Box>
         {/* Unresolved Alerts Section */}
-        <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           Unresolved Alerts
         </Typography>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Severity</TableCell>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Device</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "severity"}
+                    direction={orderBy === "severity" ? order : "asc"}
+                    onClick={() => handleSort("severity")}
+                  >
+                    Severity
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "timestamp"}
+                    direction={orderBy === "timestamp" ? order : "asc"}
+                    onClick={() => handleSort("timestamp")}
+                  >
+                    Timestamp
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "device"}
+                    direction={orderBy === "device" ? order : "asc"}
+                    onClick={() => handleSort("device")}
+                  >
+                    Device
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "message"}
+                    direction={orderBy === "message" ? order : "asc"}
+                    onClick={() => handleSort("message")}
+                  >
+                    Message
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Maintenance Plan</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {unresolvedAlerts.length > 0 ? (
-                unresolvedAlerts.map((alert) => (
-                  <React.Fragment key={alert.id}>
+              {sortAlerts(unresolvedAlerts).map((alert) => (
+                <React.Fragment key={alert.id}>
+                  <TableRow>
+                    <TableCell>
+                      <Chip
+                        label={getSeverityLabel(alert.severity)}
+                        color={
+                          getSeverityNumber(alert.severity) >= 7
+                            ? "error"
+                            : "warning"
+                        }
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {new Date(alert.timestamp).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {getDeviceName(alert.device_id, devices)}
+                    </TableCell>
+                    <TableCell>{alert.message}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => toggleExpand(alert.id)}>
+                        {expandedAlerts[alert.id] ? (
+                          <ExpandLessIcon />
+                        ) : (
+                          <ExpandMoreIcon />
+                        )}
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title="Jump to Alerts">
+                        <IconButton onClick={() => navigateToAlerts(alert.id)}>
+                          <LaunchIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                  {expandedAlerts[alert.id] && maintenancePlans[alert.id] && (
                     <TableRow>
-                      <TableCell>
-                        {getSeverityIcon(alert.severity)}
-                      </TableCell>
-                      <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
-                      <TableCell>{alert.device}</TableCell>
-                      <TableCell>{alert.message}</TableCell>
-                      <TableCell>{alert.resolved ? 'Resolved' : 'Unresolved'}</TableCell>
-                      <TableCell>
-                        <Tooltip title="Go to Alerts Page">
-                          <IconButton onClick={() => navigateToAlerts(alert.id)}>
-                            <LaunchIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={6} style={{ paddingBottom: 0, paddingTop: 0 }}>
-                        <Collapse in={expanded[alert.id]} timeout="auto" unmountOnExit>
-                          <Box sx={{ margin: 2 }}>
-                            <Grid container spacing={2}>
-                              <Grid item xs={6}>
-                                <Typography variant="h6" gutterBottom>
-                                  Remediation Plan
-                                </Typography>
-                                <List>
-                                  {alert.maintenancePlan?.steps.map((step, index) => (
-                                    <ListItem key={index}>
-                                      <ListItemText primary={step} />
-                                    </ListItem>
-                                  ))}
-                                </List>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Typography variant="h6" gutterBottom>
-                                  Preventative Measures
-                                </Typography>
-                                <List>
-                                  {alert.maintenancePlan?.preventative_measures.map((measure, index) => (
-                                    <ListItem key={index}>
-                                      <ListItemText primary={measure} />
-                                    </ListItem>
-                                  ))}
-                                </List>
-                              </Grid>
-                            </Grid>
+                      <TableCell colSpan={6}>
+                        <Box sx={{ p: 2, bgcolor: "background.paper" }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Maintenance Plan
+                          </Typography>
+                          <List>
+                            {maintenancePlans[alert.id].steps.map(
+                              (step, index) => (
+                                <ListItem key={index}>
+                                  <ListItemIcon>
+                                    <CircleIcon sx={{ fontSize: 8 }} />
+                                  </ListItemIcon>
+                                  <ListItemText primary={step} />
+                                </ListItem>
+                              )
+                            )}
+                          </List>
+                          <Typography
+                            variant="subtitle1"
+                            gutterBottom
+                            sx={{ mt: 2 }}
+                          >
+                            Preventative Measures
+                          </Typography>
+                          <List>
+                            {maintenancePlans[
+                              alert.id
+                            ].preventative_measures.map((measure, index) => (
+                              <ListItem key={index}>
+                                <ListItemIcon>
+                                  <CircleIcon sx={{ fontSize: 8 }} />
+                                </ListItemIcon>
+                                <ListItemText primary={measure} />
+                              </ListItem>
+                            ))}
+                          </List>
+                          <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2">
+                              Estimated Time:{" "}
+                              {maintenancePlans[alert.id].estimated_time} hours
+                            </Typography>
+                            <Typography variant="body2">
+                              Required Tools:{" "}
+                              {maintenancePlans[alert.id].required_tools.join(
+                                ", "
+                              )}
+                            </Typography>
+                            <Typography variant="body2">
+                              Skill Level:{" "}
+                              {maintenancePlans[alert.id].skill_level}
+                            </Typography>
                           </Box>
-                        </Collapse>
+                        </Box>
                       </TableCell>
                     </TableRow>
-                  </React.Fragment>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No unresolved alerts
-                  </TableCell>
-                </TableRow>
-              )}
+                  )}
+                </React.Fragment>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
 
         {/* Resolved Alerts Section */}
-        <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
           Resolved Alerts
         </Typography>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Severity</TableCell>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Device</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "severity"}
+                    direction={orderBy === "severity" ? order : "asc"}
+                    onClick={() => handleSort("severity")}
+                  >
+                    Severity
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "timestamp"}
+                    direction={orderBy === "timestamp" ? order : "asc"}
+                    onClick={() => handleSort("timestamp")}
+                  >
+                    Timestamp
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "device"}
+                    direction={orderBy === "device" ? order : "asc"}
+                    onClick={() => handleSort("device")}
+                  >
+                    Device
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "message"}
+                    direction={orderBy === "message" ? order : "asc"}
+                    onClick={() => handleSort("message")}
+                  >
+                    Message
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Resolution Notes</TableCell>
+                <TableCell>Resolved At</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {resolvedAlerts.length > 0 ? (
-                resolvedAlerts.map((alert) => (
-                  <TableRow key={alert.id}>
-                    <TableCell>
-                      {getSeverityIcon(alert.severity)}
-                    </TableCell>
-                    <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
-                    <TableCell>{alert.device}</TableCell>
-                    <TableCell>{alert.message}</TableCell>
-                    <TableCell>{alert.resolved ? 'Resolved' : 'Unresolved'}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    No resolved alerts
+              {sortAlerts(resolvedAlerts).map((alert) => (
+                <TableRow key={alert.id}>
+                  <TableCell>
+                    <Chip
+                      label={getSeverityLabel(alert.severity)}
+                      color={
+                        getSeverityNumber(alert.severity) >= 7
+                          ? "error"
+                          : "warning"
+                      }
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {new Date(alert.timestamp).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    {getDeviceName(alert.device_id, devices)}
+                  </TableCell>
+                  <TableCell>{alert.message}</TableCell>
+                  <TableCell>
+                    {alert.resolution_notes || "No notes provided"}
+                  </TableCell>
+                  <TableCell>
+                    {alert.resolution_timestamp
+                      ? new Date(alert.resolution_timestamp).toLocaleString()
+                      : "Unknown"}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleViewDetails(alert)}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Alert Details Dialog */}
+        <Dialog
+          open={showDetailsDialog}
+          onClose={() => setShowDetailsDialog(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          {selectedAlert && (
+            <>
+              <DialogTitle
+                sx={{
+                  bgcolor: "success.main",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <CheckCircleIcon />
+                Resolved Alert Details
+              </DialogTitle>
+              <DialogContent sx={{ mt: 2 }}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Device:</strong>{" "}
+                    {getDeviceName(selectedAlert.device_id, devices)}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Alert Type:</strong>{" "}
+                    {selectedAlert.alert_type || "warning"}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Message:</strong> {selectedAlert.message}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Created At:</strong>{" "}
+                    {new Date(selectedAlert.timestamp).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Resolution Details
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Resolution Notes:</strong>{" "}
+                    {selectedAlert.resolution_notes || "No notes provided"}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Resolved At:</strong>{" "}
+                    {selectedAlert.resolution_timestamp
+                      ? new Date(
+                          selectedAlert.resolution_timestamp
+                        ).toLocaleString()
+                      : "Unknown"}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
+                >
+                  <Button
+                    onClick={() => setShowDetailsDialog(false)}
+                    variant="contained"
+                    color="primary"
+                  >
+                    Close
+                  </Button>
+                </Box>
+              </DialogContent>
+            </>
+          )}
+        </Dialog>
       </Box>
     );
   };
 
   const getSeverityNumber = (severity) => {
-    if (typeof severity === 'number') {
+    if (typeof severity === "number") {
       return severity;
     }
-    
+
     const severityMap = {
-      'critical': 9,
-      'high': 7,
-      'medium': 5,
-      'low': 3
+      critical: 9,
+      high: 7,
+      medium: 5,
+      low: 3,
     };
-    
+
     return severityMap[severity.toLowerCase()] || 5;
   };
 
@@ -1235,97 +1494,94 @@ const Dashboard = () => {
 
   const getSeverityLabel = (severity) => {
     const severityNum = getSeverityNumber(severity);
-    if (severityNum >= 7) return 'Critical';
-    if (severityNum >= 4) return 'Warning';
-    return 'Info';
+    if (severityNum >= 7) return "Critical";
+    if (severityNum >= 4) return "Warning";
+    return "Info";
   };
 
   const renderAlerts = () => (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="h6">System Alerts</Typography>
-        <Box>
-          <Chip
-            label={`Critical: ${alerts.filter(a => !a.resolved && getSeverityNumber(a.severity) >= 7).length}`}
-            color="error"
-            sx={{ mr: 1, fontWeight: 'bold' }}
-          />
-          <Chip
-            label={`Warning: ${alerts.filter(a => !a.resolved && getSeverityNumber(a.severity) >= 4 && getSeverityNumber(a.severity) < 7).length}`}
-            color="warning"
-            sx={{ mr: 1, fontWeight: 'bold' }}
-          />
-          <Chip
-            label={`Info: ${alerts.filter(a => !a.resolved && getSeverityNumber(a.severity) < 4).length}`}
-            color="info"
-            sx={{ fontWeight: 'bold' }}
-          />
-        </Box>
-      </Box>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Severity</TableCell>
-              <TableCell>Timestamp</TableCell>
-              <TableCell>Device</TableCell>
-              <TableCell>Message</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {alerts.map((alert) => {
-              const severityNum = getSeverityNumber(alert.severity);
-              const severityLabel = getSeverityLabel(alert.severity);
-              const severityColor = 
-                severityNum >= 7 ? 'error' :
-                severityNum >= 4 ? 'warning' : 'info';
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>
+              <TableSortLabel
+                active={orderBy === "severity"}
+                direction={orderBy === "severity" ? order : "asc"}
+                onClick={() => handleSort("severity")}
+              >
+                Severity
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel
+                active={orderBy === "timestamp"}
+                direction={orderBy === "timestamp" ? order : "asc"}
+                onClick={() => handleSort("timestamp")}
+              >
+                Timestamp
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel
+                active={orderBy === "device"}
+                direction={orderBy === "device" ? order : "asc"}
+                onClick={() => handleSort("device")}
+              >
+                Device
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>
+              <TableSortLabel
+                active={orderBy === "message"}
+                direction={orderBy === "message" ? order : "asc"}
+                onClick={() => handleSort("message")}
+              >
+                Message
+              </TableSortLabel>
+            </TableCell>
+            <TableCell>Status</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {sortAlerts(alerts).map((alert) => {
+            const severityNum = getSeverityNumber(alert.severity);
+            const severityLabel = getSeverityLabel(alert.severity);
+            const severityColor =
+              severityNum >= 7
+                ? "error"
+                : severityNum >= 4
+                ? "warning"
+                : "info";
 
-              return (
-                <TableRow
-                  key={alert.id}
-                  sx={{
-                    backgroundColor: `${severityColor}.lighter`,
-                    opacity: alert.resolved ? 0.7 : 1,
-                  }}
-                >
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={`${severityLabel} (${severityNum})`}
-                        color={severityColor}
-                        size="small"
-                        sx={{ fontWeight: 'bold' }}
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
-                  <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
-                  <TableCell>{alert.message || 'No message'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={alert.resolved ? "RESOLVED" : "UNRESOLVED"}
-                      color={alert.resolved ? "success" : "warning"}
-                      size="small"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {alerts.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
-                    No alerts to display
-                  </Typography>
+            return (
+              <TableRow key={alert.id}>
+                <TableCell>
+                  <Chip
+                    label={`${severityLabel}`}
+                    color={severityColor}
+                    size="small"
+                    sx={{ fontWeight: "bold" }}
+                  />
+                </TableCell>
+                <TableCell>
+                  {new Date(alert.timestamp).toLocaleString()}
+                </TableCell>
+                <TableCell>{getDeviceName(alert.device_id, devices)}</TableCell>
+                <TableCell>{alert.message}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={alert.acknowledged ? "RESOLVED" : "UNRESOLVED"}
+                    color={alert.acknowledged ? "success" : "warning"}
+                    size="small"
+                  />
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 
   const renderPredictions = () => (
@@ -1334,10 +1590,42 @@ const Dashboard = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Severity</TableCell>
-              <TableCell>Timestamp</TableCell>
-              <TableCell>Device</TableCell>
-              <TableCell>Message</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "severity"}
+                  direction={orderBy === "severity" ? order : "asc"}
+                  onClick={() => handleSort("severity")}
+                >
+                  Severity
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "timestamp"}
+                  direction={orderBy === "timestamp" ? order : "asc"}
+                  onClick={() => handleSort("timestamp")}
+                >
+                  Timestamp
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "device"}
+                  direction={orderBy === "device" ? order : "asc"}
+                  onClick={() => handleSort("device")}
+                >
+                  Device
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === "message"}
+                  direction={orderBy === "message" ? order : "asc"}
+                  onClick={() => handleSort("message")}
+                >
+                  Message
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Predicted Failure Date</TableCell>
               <TableCell>Days Remaining</TableCell>
@@ -1347,79 +1635,114 @@ const Dashboard = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {alerts.map((alert) => {
+            {sortAlerts(alerts).map((alert) => {
               const severityNum = getSeverityNumber(alert.severity);
               const severityLabel = getSeverityLabel(alert.severity);
-              const severityColor = 
-                severityNum >= 7 ? 'error' :
-                severityNum >= 4 ? 'warning' : 'info';
-              
+              const severityColor =
+                severityNum >= 7
+                  ? "error"
+                  : severityNum >= 4
+                  ? "warning"
+                  : "info";
+
               const analysis = analysisData[alert.id];
-              
+              const isResolved = alert.acknowledged || alert.resolved;
+
               return (
                 <TableRow
                   key={alert.id}
                   id={`alert-${alert.id}`}
                   sx={{
-                    backgroundColor: `${severityColor}.lighter`,
-                    opacity: alert.resolved ? 0.7 : 1,
+                    backgroundColor: isResolved
+                      ? "rgba(0, 0, 0, 0.04)"
+                      : `${severityColor}.lighter`,
+                    opacity: isResolved ? 0.7 : 1,
                   }}
                 >
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Chip
-                        label={`${severityLabel} (${severityNum})`}
+                        label={`${severityLabel}`}
                         color={severityColor}
                         size="small"
-                        sx={{ fontWeight: 'bold' }}
+                        sx={{ fontWeight: "bold" }}
                       />
+                      {typeof alert.severity === "number" && (
+                        <Typography variant="caption" color="textSecondary">
+                          ({alert.severity})
+                        </Typography>
+                      )}
                     </Box>
                   </TableCell>
-                  <TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell>
-                  <TableCell>{alert.device_name || 'Unknown Device'}</TableCell>
-                  <TableCell>{alert.message || 'No message'}</TableCell>
+                  <TableCell>
+                    {new Date(alert.timestamp).toLocaleString()}
+                  </TableCell>
+                  <TableCell>{alert.device_name || "Unknown Device"}</TableCell>
+                  <TableCell>{alert.message || "No message"}</TableCell>
                   <TableCell>
                     <Chip
-                      label={alert.resolved ? "RESOLVED" : "UNRESOLVED"}
-                      color={alert.resolved ? "success" : "warning"}
+                      label={isResolved ? "RESOLVED" : "UNRESOLVED"}
+                      color={isResolved ? "success" : "warning"}
                       size="small"
-                      sx={{ fontWeight: 'bold' }}
+                      sx={{ fontWeight: "bold" }}
                     />
                   </TableCell>
                   <TableCell>
-                    {analysis ? new Date(analysis.predicted_failure_date).toLocaleDateString() : 'Loading...'}
+                    {analysis
+                      ? new Date(
+                          analysis.predicted_failure_date
+                        ).toLocaleDateString()
+                      : "Loading..."}
                   </TableCell>
                   <TableCell>
-                    {analysis ? `${analysis.days_remaining} days` : 'Loading...'}
+                    {analysis
+                      ? `${analysis.days_remaining} days`
+                      : "Loading..."}
                   </TableCell>
                   <TableCell>
                     {analysis ? (
                       <Box>
                         {analysis.causes.map((cause, index) => (
-                          <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
+                          <Typography
+                            key={index}
+                            variant="body2"
+                            sx={{ mb: 0.5 }}
+                          >
                             • {cause}
                           </Typography>
                         ))}
                       </Box>
-                    ) : 'Loading...'}
+                    ) : (
+                      "Loading..."
+                    )}
                   </TableCell>
                   <TableCell>
                     {analysis ? (
                       <Typography variant="body2">
                         {analysis.root_cause}
                       </Typography>
-                    ) : 'Loading...'}
+                    ) : (
+                      "Loading..."
+                    )}
                   </TableCell>
                   <TableCell>
                     {analysis && analysis.resource_requirements ? (
                       <Box>
-                        {Object.entries(analysis.resource_requirements).map(([resource, count]) => (
-                          <Typography key={resource} variant="body2" sx={{ mb: 0.5 }}>
-                            • {count} {resource.replace(/_/g, ' ')}
-                          </Typography>
-                        ))}
+                        {Object.entries(analysis.resource_requirements).map(
+                          ([resource, count]) => (
+                            <Typography
+                              key={resource}
+                              variant="body2"
+                              sx={{ mb: 0.5 }}
+                            >
+                              • {count} {resource.replace(/_/g, " ")}
+                            </Typography>
+                          )
+                        )}
                       </Box>
-                    ) : 'Loading...'}
+                    ) : (
+                      "Loading..."
+                    )}
                   </TableCell>
                 </TableRow>
               );
@@ -1427,7 +1750,11 @@ const Dashboard = () => {
             {alerts.length === 0 && (
               <TableRow>
                 <TableCell colSpan={10} align="center">
-                  <Typography variant="body2" color="textSecondary" sx={{ py: 2 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ py: 2 }}
+                  >
                     No predictions to display
                   </Typography>
                 </TableCell>
@@ -1444,7 +1771,9 @@ const Dashboard = () => {
       // Update the alert status locally first for immediate feedback
       setAlerts(
         alerts.map((alert) =>
-          alert.id === alertId ? { ...alert, resolved: true } : alert
+          alert.id === alertId
+            ? { ...alert, acknowledged: true, resolved: true }
+            : alert
         )
       );
 
@@ -1459,6 +1788,57 @@ const Dashboard = () => {
       console.error("Error resolving alert:", error);
       setError("Failed to resolve alert. Please try again.");
     }
+  };
+
+  // Add sorting function
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
+  // Add sort function for alerts
+  const sortAlerts = (alertsToSort) => {
+    if (!alertsToSort || alertsToSort.length === 0) return [];
+
+    return [...alertsToSort].sort((a, b) => {
+      const isAsc = order === "asc";
+
+      switch (orderBy) {
+        case "severity":
+          const severityA =
+            typeof a.severity === "number"
+              ? a.severity
+              : getSeverityNumber(a.severity);
+          const severityB =
+            typeof b.severity === "number"
+              ? b.severity
+              : getSeverityNumber(b.severity);
+          return isAsc ? severityA - severityB : severityB - severityA;
+
+        case "timestamp":
+          return isAsc
+            ? new Date(a.timestamp) - new Date(b.timestamp)
+            : new Date(b.timestamp) - new Date(a.timestamp);
+
+        case "device":
+          const deviceA =
+            devices.find((d) => d.id === a.device_id)?.name || "Unknown Device";
+          const deviceB =
+            devices.find((d) => d.id === b.device_id)?.name || "Unknown Device";
+          return isAsc
+            ? deviceA.localeCompare(deviceB)
+            : deviceB.localeCompare(deviceA);
+
+        case "message":
+          return isAsc
+            ? a.message.localeCompare(b.message)
+            : b.message.localeCompare(a.message);
+
+        default:
+          return 0;
+      }
+    });
   };
 
   if (loading) {
@@ -1511,26 +1891,34 @@ const Dashboard = () => {
           </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <Paper sx={{ p: 2, mb: 3 }}>
-                {renderAlerts()}
-              </Paper>
+              <Paper sx={{ p: 2, mb: 3 }}>{renderAlerts()}</Paper>
             </Grid>
             <Grid item xs={12}>
               <Paper sx={{ p: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
                   <Typography variant="h6">Environmental Issues</Typography>
                   <Button
                     variant="outlined"
                     startIcon={<NotificationsIcon />}
                     endIcon={<LaunchIcon />}
-                    onClick={() => navigate('/alerts', { state: { filter: 'environmental' } })}
+                    onClick={() =>
+                      navigate("/alerts", {
+                        state: { filter: "environmental" },
+                      })
+                    }
                   >
                     View All Environmental Alerts
                   </Button>
                 </Box>
                 {renderEnvironmentalIssues()}
-            </Paper>
-          </Grid>
+              </Paper>
+            </Grid>
           </Grid>
         </Box>
       )}
@@ -1559,7 +1947,7 @@ const Dashboard = () => {
           <Grid container spacing={3}>
             <Grid item xs={12} md={8}>
               {renderTrendAnalysis()}
-      </Grid>
+            </Grid>
             <Grid item xs={12} md={4}>
               {renderDeviceHealth()}
             </Grid>
@@ -1577,12 +1965,12 @@ const Dashboard = () => {
         {selectedFailure && (
           <>
             <DialogContent>
-      <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 Alert Details
-      </Typography>
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-      <Paper sx={{ p: 2 }}>
+                  <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       Device Information
                     </Typography>
@@ -1661,7 +2049,7 @@ const Dashboard = () => {
                           )
                         )}
                       </List>
-      </Paper>
+                    </Paper>
                   </Grid>
                 )}
               </Grid>

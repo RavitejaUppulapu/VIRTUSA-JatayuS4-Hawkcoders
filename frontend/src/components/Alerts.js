@@ -55,6 +55,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import axios from "axios";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
@@ -88,6 +89,9 @@ const Alerts = () => {
   });
 
   const [successMessage, setSuccessMessage] = useState("");
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -250,17 +254,19 @@ const Alerts = () => {
   const handleViewDetails = async (alert) => {
     setSelectedAlert(alert);
     setResolutionNotes("");
-    
+
     // If the alert is resolved, fetch the resolution notes
     if (alert.acknowledged) {
       try {
-        const response = await axios.get(`http://localhost:8000/alerts/${alert.id}/notes`);
+        const response = await axios.get(
+          `http://localhost:8000/alerts/${alert.id}/notes`
+        );
         setResolutionNotes(response.data.notes || "");
       } catch (error) {
         console.error("Error fetching resolution notes:", error);
       }
     }
-    
+
     setOpenDialog(true);
   };
 
@@ -271,6 +277,11 @@ const Alerts = () => {
   };
 
   const handleAcknowledge = async () => {
+    if (!resolutionNotes.trim()) {
+      setError("Resolution notes are required");
+      return;
+    }
+
     try {
       const response = await axios.post(
         `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
@@ -281,19 +292,19 @@ const Alerts = () => {
         }
       );
 
-      // Update alerts state with the returned alert data
-      const updatedAlerts = alerts.map((alert) =>
-        alert.id === selectedAlert.id
-          ? {
-              ...alert,
-              acknowledged: true,
-              resolution_notes: resolutionNotes,
-              resolution_timestamp: new Date().toISOString(),
-              status: "resolved",
-            }
-          : alert
+      // Update alerts state
+      setAlerts((prevAlerts) =>
+        prevAlerts.map((alert) =>
+          alert.id === selectedAlert.id
+            ? {
+                ...alert,
+                acknowledged: true,
+                resolution_notes: resolutionNotes,
+                resolution_timestamp: new Date().toISOString(),
+              }
+            : alert
+        )
       );
-      setAlerts(updatedAlerts);
 
       // Update statistics
       setStats((prevStats) => ({
@@ -304,11 +315,17 @@ const Alerts = () => {
       }));
 
       // Show success message
-      setSuccessMessage("Alert successfully resolved");
+      setSuccessMessage(
+        "Alert successfully resolved and moved to maintenance history"
+      );
 
-      // Reset UI state
+      // Close dialog
       handleCloseDialog();
-      setError(null);
+
+      // If we came from maintenance tab, go back
+      if (location.state?.from === "maintenance") {
+        navigate("/dashboard", { state: { activeTab: "maintenance" } });
+      }
     } catch (err) {
       console.error("Error acknowledging alert:", err);
       setError(
@@ -890,7 +907,9 @@ const Alerts = () => {
                     </Typography>
                     <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
                       <Typography variant="body1">
-                        {selectedAlert.resolution_notes || resolutionNotes || "No notes provided"}
+                        {selectedAlert.resolution_notes ||
+                          resolutionNotes ||
+                          "No notes provided"}
                       </Typography>
                     </Paper>
                   </Grid>
