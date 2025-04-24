@@ -113,11 +113,11 @@ function App() {
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Device Status", icon: <DeviceIcon />, path: "/device-status" },
     { text: "Alerts", icon: <AlertIcon />, path: "/alerts" },
-    {
-      text: "Failure Analysis",
-      icon: <FailureIcon />,
-      path: "/failure-analysis",
-    },
+    // {
+    //   text: "Failure Analysis",
+    //   icon: <FailureIcon />,
+    //   path: "/failure-analysis",
+    // },
     { text: "Reports", icon: <ReportIcon />, path: "/reports" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
@@ -132,7 +132,7 @@ function App() {
             <Route path="/device-status" element={<DeviceStatus />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/alerts" element={<Alerts />} />
-            <Route path="/failure-analysis" element={<FailureAnalysis />} />
+            {/* <Route path="/failure-analysis" element={<FailureAnalysis />} /> */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/why-choose-us" element={<WhyChooseUs />} />
             <Route path="/device-status/:deviceId" element={<DeviceInfo />} />
