@@ -1513,7 +1513,6 @@ async def get_dashboard_statistics():
         total_alerts = len(alerts)
         critical_alerts = len([a for a in alerts if a["severity"] >= 7 and not a.get("acknowledged", False)])
         warning_alerts = len([a for a in alerts if 4 <= a["severity"] < 7 and not a.get("acknowledged", False)])
-        info_alerts = len([a for a in alerts if a["severity"] < 4 and not a.get("acknowledged", False)])
         resolved_alerts = len([a for a in alerts if a.get("acknowledged", False)])
         
         # Calculate device statistics
@@ -1527,7 +1526,7 @@ async def get_dashboard_statistics():
                 "total": total_alerts,
                 "critical": critical_alerts,
                 "warning": warning_alerts,
-                "info": info_alerts,
+                "info": 0,  # Assuming no info alerts in the system
                 "resolved": resolved_alerts
             },
             "devices": {
@@ -1539,6 +1538,176 @@ async def get_dashboard_statistics():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/reports/device-metrics")
+async def get_device_metrics():
+    """Get device metrics for reports"""
+    try:
+        metrics = []
+        for device_id, device_data in devices.items():
+            # Get recent sensor data
+            recent_data = sensor_history.get(device_id, [])[-24:]  # Last 24 readings
+            
+            # Calculate metrics
+            if recent_data:
+                sensor_metrics = {}
+                for sensor_type in device_data.get("sensors", {}).keys():
+                    values = [r.get(sensor_type, 0) for r in recent_data if r.get(sensor_type) is not None]
+                    if values:
+                        sensor_metrics[sensor_type] = {
+                            "current": values[-1],
+                            "average": sum(values) / len(values),
+                            "min": min(values),
+                            "max": max(values),
+                            "trend": "up" if values[-1] > values[0] else "down"
+                        }
+            
+            # Get device alerts
+            device_alerts = [a for a in alerts if a["device_id"] == device_id]
+            
+            metrics.append({
+                "device_id": device_id,
+                "device_name": device_data["name"],
+                "status": device_data["status"],
+                "location": device_data["location"],
+                "type": device_data["type"],
+                "sensor_metrics": sensor_metrics,
+                "alert_count": len(device_alerts),
+                "last_maintenance": device_data.get("last_check", datetime.now()).isoformat(),
+                "uptime": device_data.get("metrics", {}).get("mtbf", 0),
+                "health_score": calculate_health_score(device_data, device_alerts)
+            })
+        
+        return metrics
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/reports/alert-analysis")
+async def get_alert_analysis():
+    """Get alert analysis for reports"""
+    try:
+        # Get all alerts
+        all_alerts = alerts.copy()
+        
+        # Calculate alert statistics
+        total_alerts = len(all_alerts)
+        critical_alerts = len([a for a in all_alerts if a["severity"] >= 7])
+        warning_alerts = len([a for a in all_alerts if 4 <= a["severity"] < 7])
+        resolved_alerts = len([a for a in all_alerts if a.get("acknowledged", False)])
+        
+        # Calculate alert trends
+        now = datetime.now()
+        last_7_days = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+        alert_trends = []
+        
+        for date in last_7_days:
+            day_alerts = [a for a in all_alerts if a["timestamp"].startswith(date)]
+            alert_trends.append({
+                "date": date,
+                "total": len(day_alerts),
+                "critical": len([a for a in day_alerts if a["severity"] >= 7]),
+                "warning": len([a for a in day_alerts if 4 <= a["severity"] < 7]),
+                "resolved": len([a for a in day_alerts if a.get("acknowledged", False)])
+            })
+        
+        # Calculate device-wise alert distribution
+        device_alerts = {}
+        for alert in all_alerts:
+            device_id = alert["device_id"]
+            if device_id not in device_alerts:
+                device_alerts[device_id] = {
+                    "total": 0,
+                    "critical": 0,
+                    "warning": 0,
+                    "resolved": 0
+                }
+            device_alerts[device_id]["total"] += 1
+            if alert["severity"] >= 7:
+                device_alerts[device_id]["critical"] += 1
+            elif alert["severity"] >= 4:
+                device_alerts[device_id]["warning"] += 1
+            if alert.get("acknowledged", False):
+                device_alerts[device_id]["resolved"] += 1
+        
+        return {
+            "summary": {
+                "total_alerts": total_alerts,
+                "critical_alerts": critical_alerts,
+                "warning_alerts": warning_alerts,
+                "resolved_alerts": resolved_alerts,
+                "resolution_rate": (resolved_alerts / total_alerts * 100) if total_alerts > 0 else 0
+            },
+            "trends": alert_trends,
+            "device_distribution": device_alerts
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/reports/maintenance-analysis")
+async def get_maintenance_analysis():
+    """Get maintenance analysis for reports"""
+    try:
+        # Get all maintenance-related alerts
+        maintenance_alerts = [a for a in alerts if a.get("type") == "PREDICTIVE_MAINTENANCE"]
+        
+        # Calculate maintenance statistics
+        total_maintenance = len(maintenance_alerts)
+        completed_maintenance = len([a for a in maintenance_alerts if a.get("acknowledged", False)])
+        pending_maintenance = total_maintenance - completed_maintenance
+        
+        # Calculate maintenance costs
+        total_cost = sum(a.get("details", {}).get("cost", 0) for a in maintenance_alerts)
+        average_cost = total_cost / total_maintenance if total_maintenance > 0 else 0
+        
+        # Calculate maintenance trends
+        now = datetime.now()
+        last_30_days = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(30)]
+        maintenance_trends = []
+        
+        for date in last_30_days:
+            day_maintenance = [a for a in maintenance_alerts if a["timestamp"].startswith(date)]
+            maintenance_trends.append({
+                "date": date,
+                "total": len(day_maintenance),
+                "completed": len([a for a in day_maintenance if a.get("acknowledged", False)]),
+                "cost": sum(a.get("details", {}).get("cost", 0) for a in day_maintenance)
+            })
+        
+        return {
+            "summary": {
+                "total_maintenance": total_maintenance,
+                "completed_maintenance": completed_maintenance,
+                "pending_maintenance": pending_maintenance,
+                "total_cost": total_cost,
+                "average_cost": average_cost
+            },
+            "trends": maintenance_trends
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def calculate_health_score(device_data, device_alerts):
+    """Calculate device health score based on various factors"""
+    try:
+        # Base score
+        score = 100
+        
+        # Deduct points for alerts
+        critical_alerts = len([a for a in device_alerts if a["severity"] >= 7])
+        warning_alerts = len([a for a in device_alerts if 4 <= a["severity"] < 7])
+        score -= (critical_alerts * 20 + warning_alerts * 10)
+        
+        # Deduct points for device status
+        if device_data["status"] == "critical":
+            score -= 30
+        elif device_data["status"] == "warning":
+            score -= 15
+        
+        # Ensure score stays within bounds
+        return max(0, min(100, score))
+    except Exception as e:
+        print(f"Error calculating health score: {str(e)}")
+        return 50  # Return neutral score in case of error
 
 if __name__ == "__main__":
     import uvicorn
