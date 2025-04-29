@@ -13,6 +13,7 @@ from enum import Enum
 from fastapi_utils.tasks import repeat_every
 from fastapi.responses import Response
 from dateutil.parser import parse
+from threading import Lock
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -36,15 +37,26 @@ alerts = []
 failures = []  # Initialize as empty list
 settings = {
     "thresholds": {
-        "temperature": {"warning": 65, "critical": 75},
-        "humidity": {"warning": 70, "critical": 85},
-        "vibration": {"warning": 4.0, "critical": 5.0}
+        "temperature": {"warning": 60, "critical": 75},
+        "humidity": {"warning": 60, "critical": 85},
+        "vibration": {"warning": 3.0, "critical": 5.0},
+        "voltage": {"warning": 200, "critical": 240},
+        "current": {"warning": 8, "critical": 15},
+        "pressure": {"warning": 0.8, "critical": 2.0},
+        "disk_usage": {"warning": 70, "critical": 95},
+        "fuel_level": {"warning": 10, "critical": 15},
+        "packet_loss": {"warning": 0.5, "critical": 5.0},
+        "bandwidth": {"warning": 300, "critical": 100},
+        "power": {"warning": 3.0, "critical": 6.0},
+        "read_latency": {"warning": 1.0, "critical": 5.0},
     },
     "notifications": {
         "email": True,
         "sms": False
     }
 }
+
+settings_lock = Lock()
 
 def generate_mock_alerts():
     """Generate mock alerts for testing"""
@@ -653,11 +665,13 @@ async def get_alert_notes(alert_id: str):
 
 @app.get("/settings")
 async def get_settings():
-    return settings
+    with settings_lock:
+        return settings
 
 @app.post("/settings")
 async def update_settings(new_settings: Settings):
-    settings.update(new_settings.dict())
+    with settings_lock:
+        settings.update(new_settings.dict())
     return settings
 
 @app.get("/health")

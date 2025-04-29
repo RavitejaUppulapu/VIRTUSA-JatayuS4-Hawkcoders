@@ -21,6 +21,11 @@ const Settings = () => {
       temperature: { warning: 65, critical: 75 },
       humidity: { warning: 70, critical: 85 },
       vibration: { warning: 4.0, critical: 5.0 },
+      voltage: { warning: 210, critical: 240 },
+      current: { warning: 10, critical: 15 },
+      pressure: { warning: 1.0, critical: 2.0 },
+      disk_usage: { warning: 80, critical: 95 },
+      fuel_level: { warning: 20, critical: 10 },
     },
     notifications: {
       email: true,
@@ -31,6 +36,36 @@ const Settings = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+
+  // Map device types to their relevant thresholds
+  const deviceThresholdMap = {
+    HVAC: ['temperature', 'humidity', 'power'],
+    Power: ['voltage', 'current', 'temperature', 'fuel_level', 'pressure'],
+    Network: ['temperature', 'packet_loss', 'bandwidth'],
+    Storage: ['temperature', 'disk_usage', 'read_latency'],
+  };
+
+  const deviceTypeLabels = {
+    HVAC: 'HVAC (e.g., Server Room AC)',
+    Power: 'Power (e.g., Main Power Unit, Backup Generator)',
+    Network: 'Network (e.g., Network Switch)',
+    Storage: 'Storage (e.g., Storage Array)',
+  };
+
+  const thresholdUnits = {
+    temperature: '°C',
+    humidity: '%',
+    vibration: 'mm/s',
+    voltage: 'V',
+    current: 'A',
+    pressure: 'bar',
+    disk_usage: '%',
+    fuel_level: '%',
+    packet_loss: '%',
+    bandwidth: 'Mbps',
+    power: 'kW',
+    read_latency: 'ms',
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -152,50 +187,81 @@ const Settings = () => {
               Warning thresholds should be lower than critical thresholds.
             </Typography>
             <Grid container spacing={3}>
-              {Object.entries(settings.thresholds).map(([metric, values]) => (
-                <Grid item xs={12} key={metric}>
+              {Object.entries(deviceThresholdMap).map(([deviceType, metrics]) => (
+                <Grid item xs={12} key={deviceType}>
                   <Card>
                     <CardContent>
                       <Typography variant="subtitle1" gutterBottom>
-                        {metric.charAt(0).toUpperCase() + metric.slice(1)}
+                        {deviceTypeLabels[deviceType] || deviceType}
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="Warning Threshold"
-                            type="number"
-                            value={values.warning}
-                            onChange={(e) =>
-                              handleThresholdChange(
-                                metric,
-                                "warning",
-                                e.target.value
-                              )
-                            }
-                            inputProps={{
-                              step: metric === "vibration" ? "0.1" : "1",
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="Critical Threshold"
-                            type="number"
-                            value={values.critical}
-                            onChange={(e) =>
-                              handleThresholdChange(
-                                metric,
-                                "critical",
-                                e.target.value
-                              )
-                            }
-                            inputProps={{
-                              step: metric === "vibration" ? "0.1" : "1",
-                            }}
-                          />
-                        </Grid>
+                      <Grid container spacing={2} alignItems="center">
+                        {metrics.map((metric) => (
+                          <React.Fragment key={metric}>
+                            <Grid item xs={12} sm={6} md={6}>
+                              <TextField
+                                fullWidth
+                                label={
+                                  metric.charAt(0).toUpperCase() + metric.slice(1) +
+                                  ' Warning Threshold'
+                                }
+                                type="number"
+                                value={settings.thresholds[metric]?.warning || ''}
+                                onChange={(e) =>
+                                  handleThresholdChange(
+                                    metric,
+                                    'warning',
+                                    e.target.value
+                                  )
+                                }
+                                InputProps={{
+                                  endAdornment: (
+                                    <span style={{ color: '#888', marginLeft: 4 }}>
+                                      {thresholdUnits[metric] || ''}
+                                    </span>
+                                  ),
+                                }}
+                                inputProps={{
+                                  step:
+                                    metric === 'vibration' || metric === 'pressure'
+                                      ? '0.1'
+                                      : '1',
+                                }}
+                                sx={{ mb: { xs: 2, sm: 0 } }}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={6}>
+                              <TextField
+                                fullWidth
+                                label={
+                                  metric.charAt(0).toUpperCase() + metric.slice(1) +
+                                  ' Critical Threshold'
+                                }
+                                type="number"
+                                value={settings.thresholds[metric]?.critical || ''}
+                                onChange={(e) =>
+                                  handleThresholdChange(
+                                    metric,
+                                    'critical',
+                                    e.target.value
+                                  )
+                                }
+                                InputProps={{
+                                  endAdornment: (
+                                    <span style={{ color: '#888', marginLeft: 4 }}>
+                                      {thresholdUnits[metric] || ''}
+                                    </span>
+                                  ),
+                                }}
+                                inputProps={{
+                                  step:
+                                    metric === 'vibration' || metric === 'pressure'
+                                      ? '0.1'
+                                      : '1',
+                                }}
+                              />
+                            </Grid>
+                          </React.Fragment>
+                        ))}
                       </Grid>
                     </CardContent>
                   </Card>
@@ -206,7 +272,7 @@ const Settings = () => {
         </Grid>
 
         {/* Notification Settings */}
-        <Grid item xs={12} md={4}>
+        {/* <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Notification Settings
@@ -245,7 +311,7 @@ const Settings = () => {
               </Typography>
             </Box>
           </Paper>
-        </Grid>
+        </Grid> */}
       </Grid>
 
       {/* Action Buttons */}

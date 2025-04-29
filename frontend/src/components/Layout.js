@@ -65,6 +65,7 @@ const Layout = ({ children }) => {
             width: drawerWidth,
             boxSizing: "border-box",
             bgcolor: "background.paper",
+            overflowX: 'hidden',
           },
         }}
         variant="permanent"
@@ -85,29 +86,45 @@ const Layout = ({ children }) => {
               to={item.path}
               selected={location.pathname === item.path}
               sx={{
-                "&.Mui-selected": {
-                  bgcolor: "primary.light",
-                  color: "primary.main",
-                  "& .MuiListItemIcon-root": {
-                    color: "primary.main",
+                borderRadius: 2,
+                my: 0.5,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: '#fff',
+                  '& .MuiListItemIcon-root': {
+                    color: '#fff',
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: '#fff',
+                    fontWeight: 600,
                   },
                 },
-                "&:hover": {
-                  bgcolor: "primary.lighter",
+                '&:hover': {
+                  bgcolor: 'primary.light',
+                  color: 'primary.main',
+                  '& .MuiListItemIcon-root': {
+                    color: 'text.primary',
+                  },
+                  '& .MuiListItemText-primary': {
+                    color: 'text.primary',
+                  },
                 },
+                transition: 'background 0.2s, color 0.2s',
+                minHeight: 48,
               }}
             >
               <ListItemIcon
                 sx={{
                   color:
                     location.pathname === item.path
-                      ? "primary.main"
-                      : "inherit",
+                      ? '#fff'
+                      : 'inherit',
+                  minWidth: 36,
                 }}
               >
                 {item.icon}
               </ListItemIcon>
-              <ListItemText primary={item.text} />
+              <ListItemText primary={item.text} sx={{ fontWeight: 500 }} />
             </ListItem>
           ))}
         </List>
@@ -129,3 +146,4 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
+
