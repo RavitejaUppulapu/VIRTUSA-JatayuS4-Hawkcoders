@@ -115,7 +115,7 @@ const Alerts = () => {
           // Ensure all required fields are present
           const processedAlert = {
             ...alert,
-            timestamp: new Date(alert.timestamp),
+            timestamp: typeof alert.timestamp === 'string' ? alert.timestamp : (alert.timestamp && alert.timestamp.toISOString ? alert.timestamp.toISOString() : ''),
             device_name: devicesData.find((device) => device.id === alert.device_id)?.name || "Unknown Device",
             severity: alert.severity || 5, // Default to medium severity if not specified
             alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
@@ -181,25 +181,33 @@ const Alerts = () => {
       dayEnd.setDate(dayEnd.getDate() + 1);
 
       return {
-        timestamp: day,
+        date: day, // Use 'date' as the key for XAxis
         critical: currentAlerts.filter(
-          (a) =>
-            new Date(a.timestamp) >= dayStart &&
-            new Date(a.timestamp) < dayEnd &&
-            a.severity >= 7
+          (a) => {
+            const alertDate = new Date(a.timestamp);
+            return !isNaN(alertDate.getTime()) &&
+              alertDate >= dayStart &&
+              alertDate < dayEnd &&
+              a.severity >= 7;
+          }
         ).length,
         warning: currentAlerts.filter(
-          (a) =>
-            new Date(a.timestamp) >= dayStart &&
-            new Date(a.timestamp) < dayEnd &&
-            a.severity >= 4 &&
-            a.severity < 7
+          (a) => {
+            const alertDate = new Date(a.timestamp);
+            return !isNaN(alertDate.getTime()) &&
+              alertDate >= dayStart &&
+              alertDate < dayEnd &&
+              a.severity >= 4 && a.severity < 7;
+          }
         ).length,
         info: currentAlerts.filter(
-          (a) =>
-            new Date(a.timestamp) >= dayStart &&
-            new Date(a.timestamp) < dayEnd &&
-            a.severity < 4
+          (a) => {
+            const alertDate = new Date(a.timestamp);
+            return !isNaN(alertDate.getTime()) &&
+              alertDate >= dayStart &&
+              alertDate < dayEnd &&
+              a.severity < 4;
+          }
         ).length,
       };
     });
@@ -429,10 +437,10 @@ const Alerts = () => {
               dataKey="date"
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+                return !isNaN(date.getTime()) ? date.toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
-                });
+                }) : value;
               }}
             />
             <YAxis />

@@ -15,6 +15,8 @@ from fastapi.responses import Response
 from dateutil.parser import parse
 from threading import Lock
 from pathlib import Path
+import openai
+from dotenv import load_dotenv
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -61,6 +63,10 @@ settings_lock = Lock()
 
 # Add after other global variables
 ALERTS_FILE = "alerts.json"
+
+# Load environment variables (for OPENAI_API_KEY)
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 def save_alerts_to_disk():
     """Save alerts to disk"""
@@ -989,54 +995,81 @@ async def get_predictions():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+async def generate_gpt_description(alert_type, severity, impact, affected_devices):
+    prompt = f"""
+Generate a concise, professional, and context-aware description for an environmental alert in a predictive maintenance system.
+Alert Type: {alert_type}
+Severity: {severity}
+Impact: {', '.join(impact)}
+Affected Devices: {', '.join(affected_devices)}
+Description: """
+    try:
+        response = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=60,
+            temperature=0.7
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        print(f"Error generating GPT description: {e}")
+        return f"{alert_type.capitalize()} alert affecting {', '.join(affected_devices)}. Severity: {severity}. Impact: {', '.join(impact)}."
+
 @app.get("/dashboard/environmental")
 async def get_environmental_alerts():
     """Get environmental and unexpected issues"""
     try:
         alerts = []
-        
-        # Check for weather-related issues
-        if random.random() < 0.3:  # 30% chance of weather alert
-            alerts.append({
-                "id": str(uuid.uuid4()),
-                "type": "weather",
-                "severity": random.choice(["low", "medium", "high", "critical"]),
-                "start_time": datetime.now().isoformat(),
-                "end_time": (datetime.now() + timedelta(hours=2)).isoformat(),
-                "impact": ["Temperature", "Humidity", "Air pressure"],
-                "description": "Weather conditions may affect equipment performance",
-                "affected_devices": random.sample(list(devices.keys()), min(3, len(devices)))
-            })
-        
-        # Check for power-related issues
-        if random.random() < 0.2:  # 20% chance of power alert
-            alerts.append({
-                "id": str(uuid.uuid4()),
-                "type": "power",
-                "severity": random.choice(["low", "medium", "high", "critical"]),
-                "start_time": datetime.now().isoformat(),
-                "end_time": (datetime.now() + timedelta(hours=1)).isoformat(),
-                "impact": ["Power supply", "Voltage stability"],
-                "description": "Power fluctuations detected",
-                "affected_devices": random.sample(list(devices.keys()), min(2, len(devices)))
-            })
-        
-        # Check for sensor issues
+        device_ids = list(devices.keys())
+        if not device_ids:
+            return []
+        # Always generate at least one weather and one power alert if devices exist
+        weather_alert = {
+            "id": str(uuid.uuid4()),
+            "type": "weather",
+            "severity": random.choice(["low", "medium", "high", "critical"]),
+            "start_time": datetime.now().isoformat(),
+            "end_time": (datetime.now() + timedelta(hours=2)).isoformat(),
+            "impact": ["Temperature", "Humidity", "Air pressure"],
+            "affected_devices": random.sample(device_ids, min(3, len(device_ids)))
+        }
+        weather_alert["description"] = await generate_gpt_description(
+            weather_alert["type"], weather_alert["severity"], weather_alert["impact"], weather_alert["affected_devices"]
+        )
+        alerts.append(weather_alert)
+
+        power_alert = {
+            "id": str(uuid.uuid4()),
+            "type": "power",
+            "severity": random.choice(["low", "medium", "high", "critical"]),
+            "start_time": datetime.now().isoformat(),
+            "end_time": (datetime.now() + timedelta(hours=1)).isoformat(),
+            "impact": ["Power supply", "Voltage stability"],
+            "affected_devices": random.sample(device_ids, min(2, len(device_ids)))
+        }
+        power_alert["description"] = await generate_gpt_description(
+            power_alert["type"], power_alert["severity"], power_alert["impact"], power_alert["affected_devices"]
+        )
+        alerts.append(power_alert)
+
+        # Sensor issues (if any)
         for device_id, device_data in devices.items():
             if device_id in sensor_history and len(sensor_history[device_id]) > 0:
-                recent_data = sensor_history[device_id][-5:]  # Check last 5 readings
+                recent_data = sensor_history[device_id][-5:]
                 if any(reading.get("sensor_error", False) for reading in recent_data):
-                    alerts.append({
+                    sensor_alert = {
                         "id": str(uuid.uuid4()),
                         "type": "sensor",
                         "severity": "high",
                         "start_time": datetime.now().isoformat(),
-                        "end_time": None,  # Will be set when resolved
+                        "end_time": None,
                         "impact": ["Data collection", "Monitoring"],
-                        "description": f"Sensor issues detected for {device_data['name']}",
                         "affected_devices": [device_id]
-                    })
-        
+                    }
+                    sensor_alert["description"] = await generate_gpt_description(
+                        sensor_alert["type"], sensor_alert["severity"], sensor_alert["impact"], sensor_alert["affected_devices"]
+                    )
+                    alerts.append(sensor_alert)
         return alerts
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
