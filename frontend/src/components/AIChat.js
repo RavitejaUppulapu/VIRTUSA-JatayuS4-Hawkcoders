@@ -55,7 +55,7 @@ const AIChat = () => {
 
     try {
       // Replace with your actual AI endpoint
-      const response = await axios.post("https://pmbi-backend.onrender.com/ai-chat", {
+      const response = await axios.post("http://localhost:8000/ai-chat", {
         message: input,
       });
 

@@ -65,8 +65,8 @@ const Reports = () => {
     setLoading(true);
     try {
       const [metricsRes, alertsRes] = await Promise.all([
-        axios.get("https://pmbi-backend.onrender.com/reports/device-metrics"),
-        axios.get("https://pmbi-backend.onrender.com/reports/alert-analysis"),
+        axios.get("http://localhost:8000/reports/device-metrics"),
+        axios.get("http://localhost:8000/reports/alert-analysis"),
       ]);
 
       setDeviceMetrics(metricsRes.data);

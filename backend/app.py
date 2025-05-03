@@ -14,6 +14,7 @@ from fastapi_utils.tasks import repeat_every
 from fastapi.responses import Response
 from dateutil.parser import parse
 from threading import Lock
+from pathlib import Path
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -57,6 +58,27 @@ settings = {
 }
 
 settings_lock = Lock()
+
+# Add after other global variables
+ALERTS_FILE = "alerts.json"
+
+def save_alerts_to_disk():
+    """Save alerts to disk"""
+    try:
+        with open(ALERTS_FILE, 'w') as f:
+            json.dump(alerts, f, default=str)
+    except Exception as e:
+        print(f"Error saving alerts to disk: {str(e)}")
+
+def load_alerts_from_disk():
+    """Load alerts from disk"""
+    try:
+        if os.path.exists(ALERTS_FILE):
+            with open(ALERTS_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error loading alerts from disk: {str(e)}")
+    return []
 
 def generate_mock_alerts():
     """Generate mock alerts for testing"""
@@ -203,7 +225,15 @@ def init_mock_data():
     """Initialize mock data for the application"""
     global devices, alerts, sensor_history, failures
     
-    # Initialize mock devices with more realistic base values
+    # Try to load existing alerts first
+    alerts = load_alerts_from_disk()
+    
+    # If no alerts exist, generate new ones
+    if not alerts:
+        alerts = generate_mock_alerts()
+        save_alerts_to_disk()
+    
+    # Rest of the function remains the same
     devices = {
         "device_1": {
             "id": "device_1",
@@ -297,7 +327,6 @@ def init_mock_data():
         }
     }
     
-    alerts = generate_mock_alerts()
     sensor_history = generate_sensor_history()
     failures = generate_mock_failures()
 
@@ -617,6 +646,9 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
                 new_alerts.append(alert)
                 alerts.append(alert)
         
+        # Save alerts to disk
+        save_alerts_to_disk()
+        
         # Update device status
         if request.device_id in devices:
             devices[request.device_id]["last_check"] = datetime.now()
@@ -641,6 +673,10 @@ async def acknowledge_alert(alert_id: str, data: dict):
                 alert["resolution_notes"] = data.get("notes") or "No specific resolution notes provided"
                 alert["resolution_timestamp"] = data.get("resolution_timestamp") or datetime.now().isoformat()
                 alert["resolved_by"] = data.get("resolved_by", "System")
+                
+                # Save changes to disk
+                save_alerts_to_disk()
+                
                 return {
                     "message": "Alert acknowledged and resolved",
                     "alert": alert
@@ -1722,6 +1758,24 @@ def calculate_health_score(device_data, device_alerts):
     except Exception as e:
         print(f"Error calculating health score: {str(e)}")
         return 50  # Return neutral score in case of error
+
+# Add periodic alert generation
+@app.on_event("startup")
+@repeat_every(seconds=300)  # Generate new alerts every 5 minutes
+async def periodic_alert_generation():
+    try:
+        # Generate new alerts
+        new_alerts = generate_mock_alerts()
+        
+        # Add new alerts to existing ones
+        alerts.extend(new_alerts)
+        
+        # Save to disk
+        save_alerts_to_disk()
+        
+        print(f"Generated {len(new_alerts)} new alerts")
+    except Exception as e:
+        print(f"Error generating periodic alerts: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

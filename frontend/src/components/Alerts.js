@@ -56,6 +56,7 @@ import {
 } from "recharts";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
@@ -97,8 +98,8 @@ const Alerts = () => {
     setLoading(true);
     try {
       const [alertsResponse, devicesResponse] = await Promise.all([
-        fetch("https://pmbi-backend.onrender.com/alerts"),
-        fetch("https://pmbi-backend.onrender.com/devices"),
+        fetch("http://localhost:8000/alerts"),
+        fetch("http://localhost:8000/devices"),
       ]);
 
       if (!alertsResponse.ok || !devicesResponse.ok) {
@@ -108,95 +109,48 @@ const Alerts = () => {
       const alertsData = await alertsResponse.json();
       const devicesData = await devicesResponse.json();
 
-      // Process alerts data
+      // Process alerts data with improved error handling
       const processedAlerts = alertsData.map((alert) => {
-        // Determine severity if not provided
-        let severity = alert.severity;
-        if (!severity) {
-          switch (alert.type?.toLowerCase()) {
-            case "critical":
-              severity = 8;
-              break;
-            case "warning":
-              severity = 5;
-              break;
-            default:
-              severity = 2;
-          }
-        }
+        try {
+          // Ensure all required fields are present
+          const processedAlert = {
+            ...alert,
+            timestamp: new Date(alert.timestamp),
+            device_name: devicesData.find((device) => device.id === alert.device_id)?.name || "Unknown Device",
+            severity: alert.severity || 5, // Default to medium severity if not specified
+            alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
+            acknowledged: alert.acknowledged || false,
+            resolution_notes: alert.resolution_notes || "",
+            resolution_timestamp: alert.resolution_timestamp ? new Date(alert.resolution_timestamp) : null,
+            id: alert.id || uuidv4(),
+          };
 
-        return {
-          ...alert,
-          timestamp: new Date(alert.timestamp),
-          device_name:
-            devicesData.find((device) => device.id === alert.device_id)?.name ||
-            "Unknown Device",
-          severity: severity,
-          alert_type:
-            severity >= 7 ? "critical" : severity >= 4 ? "warning" : "info",
-        };
-      });
+          // Validate and fix any missing or invalid fields
+          if (!processedAlert.message) processedAlert.message = "No message provided";
+          if (!processedAlert.details) processedAlert.details = {};
+
+          return processedAlert;
+        } catch (error) {
+          console.error("Error processing alert:", error, alert);
+          return null;
+        }
+      }).filter(alert => alert !== null); // Remove any null alerts from processing errors
 
       setAlerts(processedAlerts);
       setDevices(devicesData);
 
-      // Calculate alert statistics
-      const alertStats = {
-        total: processedAlerts.length,
-        hardware: processedAlerts.filter((alert) => alert.type === "hardware")
-          .length,
-        software: processedAlerts.filter((alert) => alert.type === "software")
-          .length,
-        maintenance: processedAlerts.filter(
-          (alert) => alert.type === "maintenance"
-        ).length,
-      };
-      setAlertStats(alertStats);
-
-      // Process alert trends
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() - (6 - i));
-        return date;
-      });
-
-      const trendData = last7Days.map((date) => {
-        const nextDay = new Date(date);
-        nextDay.setDate(date.getDate() + 1);
-
-        const dayAlerts = processedAlerts.filter((alert) => {
-          const alertDate = new Date(alert.timestamp);
-          return (
-            alertDate >= date && alertDate < nextDay && !alert.acknowledged
-          );
-        });
-
-        return {
-          date: date.toISOString().split("T")[0],
-          critical: dayAlerts.filter((alert) => alert.severity >= 7).length,
-          warning: dayAlerts.filter(
-            (alert) => alert.severity >= 4 && alert.severity < 7
-          ).length,
-          info: dayAlerts.filter((alert) => alert.severity < 4).length,
-        };
-      });
-
-      setAlertTrends(trendData);
-
-      // Update stats for the cards
+      // Update statistics with improved error handling
       const newStats = {
-        critical: processedAlerts.filter(
-          (a) => !a.acknowledged && a.severity >= 7
-        ).length,
-        warning: processedAlerts.filter(
-          (a) => !a.acknowledged && a.severity >= 4 && a.severity < 7
-        ).length,
-        info: processedAlerts.filter((a) => !a.acknowledged && a.severity < 4)
-          .length,
-        resolved: processedAlerts.filter((a) => a.acknowledged).length,
+        critical: processedAlerts.filter(a => !a.acknowledged && a.severity >= 7).length,
+        warning: processedAlerts.filter(a => !a.acknowledged && a.severity >= 4 && a.severity < 7).length,
+        info: processedAlerts.filter(a => !a.acknowledged && a.severity < 4).length,
+        resolved: processedAlerts.filter(a => a.acknowledged).length,
       };
       setStats(newStats);
+
+      // Update alert trends with improved error handling
+      const trendData = generateTrendData(processedAlerts);
+      setAlertTrends(trendData);
 
       setError(null);
     } catch (error) {
@@ -259,7 +213,7 @@ const Alerts = () => {
     if (alert.acknowledged) {
       try {
         const response = await axios.get(
-          `https://pmbi-backend.onrender.com/alerts/${alert.id}/notes`
+          `http://localhost:8000/alerts/${alert.id}/notes`
         );
         setResolutionNotes(response.data.notes || "");
       } catch (error) {
@@ -284,7 +238,7 @@ const Alerts = () => {
 
     try {
       const response = await axios.post(
-        `https://pmbi-backend.onrender.com/alerts/${selectedAlert.id}/acknowledge`,
+        `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
         {
           acknowledged: true,
           notes: resolutionNotes,

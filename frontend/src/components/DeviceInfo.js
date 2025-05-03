@@ -23,7 +23,7 @@ const DeviceInfo = () => {
   useEffect(() => {
     const fetchDeviceInfo = async () => {
       try {
-        const response = await axios.get(`https://pmbi-backend.onrender.com/device-status/${deviceId}`);
+        const response = await axios.get(`http://localhost:8000/device-status/${deviceId}`);
         setDevice(response.data);
         setError(null);
       } catch (err) {
@@ -35,7 +35,7 @@ const DeviceInfo = () => {
 
     const fetchSensorData = async () => {
       try {
-        const response = await axios.get(`https://pmbi-backend.onrender.com/sensor-data/${deviceId}`);
+        const response = await axios.get(`http://localhost:8000/sensor-data/${deviceId}`);
         setSensorData(response.data);
       } catch (err) {
         console.error("Failed to fetch sensor data", err);

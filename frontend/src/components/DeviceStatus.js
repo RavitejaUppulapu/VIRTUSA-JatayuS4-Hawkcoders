@@ -105,24 +105,76 @@ const DeviceStatus = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [alerts, setAlerts] = useState([]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [devicesResponse, alertsResponse] = await Promise.all([
+        fetch("http://localhost:8000/devices"),
+        fetch("http://localhost:8000/alerts")
+      ]);
+
+      if (!devicesResponse.ok || !alertsResponse.ok) {
+        throw new Error("Failed to fetch data");
+      }
+
+      const devicesData = await devicesResponse.json();
+      const alertsData = await alertsResponse.json();
+
+      // Process alerts with improved error handling
+      const processedAlerts = alertsData.map(alert => {
+        try {
+          return {
+            ...alert,
+            timestamp: new Date(alert.timestamp),
+            device_name: devicesData.find(device => device.id === alert.device_id)?.name || "Unknown Device",
+            severity: alert.severity || 5,
+            alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
+            acknowledged: alert.acknowledged || false
+          };
+        } catch (error) {
+          console.error("Error processing alert:", error, alert);
+          return null;
+        }
+      }).filter(alert => alert !== null);
+
+      // Process devices with improved error handling
+      const processedDevices = devicesData.map(device => {
+        try {
+          const deviceAlerts = processedAlerts.filter(alert => alert.device_id === device.id);
+          const criticalAlerts = deviceAlerts.filter(alert => !alert.acknowledged && alert.severity >= 7);
+          const warningAlerts = deviceAlerts.filter(alert => !alert.acknowledged && alert.severity >= 4 && alert.severity < 7);
+
+          return {
+            ...device,
+            status: device.status || "unknown",
+            last_check: device.last_check ? new Date(device.last_check) : null,
+            alerts: {
+              total: deviceAlerts.length,
+              critical: criticalAlerts.length,
+              warning: warningAlerts.length,
+              resolved: deviceAlerts.filter(alert => alert.acknowledged).length
+            }
+          };
+        } catch (error) {
+          console.error("Error processing device:", error, device);
+          return null;
+        }
+      }).filter(device => device !== null);
+
+      setDevices(processedDevices);
+      setAlerts(processedAlerts);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to fetch data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [devicesResponse, sensorResponse] = await Promise.all([
-          axios.get("https://pmbi-backend.onrender.com/device-status"),
-          axios.get("https://pmbi-backend.onrender.com/sensor-data"),
-        ]);
-        setDevices(Object.values(devicesResponse.data));
-        setSensorData(sensorResponse.data);
-        setLastUpdate(new Date());
-        setError(null);
-      } catch (err) {
-        setError("Failed to fetch device data");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -131,7 +183,7 @@ const DeviceStatus = () => {
   useEffect(() => {
     const fetchSensorData = async () => {
       try {
-        const response = await axios.get("https://pmbi-backend.onrender.com/sensor-data");
+        const response = await axios.get("http://localhost:8000/sensor-data");
         setSensorData((prevData) => {
           const newData = response.data;
           const mergedData = { ...prevData };

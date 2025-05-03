@@ -65,9 +65,8 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
-
-```
 python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
 3. Set up the frontend
 
 ```bash
@@ -79,8 +78,8 @@ npm start
 The application will be available at:
 
 - Frontend: http://localhost:3000
-- Backend API: https://pmbi-backend.onrender.com
-- API Documentation: https://pmbi-backend.onrender.com/docs
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
 ## Project Structure
 

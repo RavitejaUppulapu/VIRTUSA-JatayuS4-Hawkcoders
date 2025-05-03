@@ -86,7 +86,7 @@ import axios from "axios";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "https://pmbi-backend.onrender.com";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 const SEVERITY_COLORS = {
   critical: "#dc3545",
@@ -152,130 +152,71 @@ const Dashboard = () => {
   const [orderBy, setOrderBy] = useState("severity");
   const [order, setOrder] = useState("desc");
 
-    const fetchData = async () => {
-      try {
-      console.log("Fetching data from:", API_BASE_URL);
-
-      // Test endpoint first
-      try {
-        const testResponse = await axios.get(`${API_BASE_URL}/`);
-        console.log("API connection test successful:", testResponse.data);
-      } catch (error) {
-        console.error("API connection test failed:", error);
-        throw new Error("Could not connect to API server");
-      }
-
-      // Fetch all required data in parallel
-      const [alertsRes, devicesRes, environmentalRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/alerts`),
-        axios.get(`${API_BASE_URL}/devices`),
-        axios.get(`${API_BASE_URL}/dashboard/environmental`),
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [predictionsResponse, alertsResponse, devicesResponse] = await Promise.all([
+        fetch("http://localhost:8000/dashboard/predictions"),
+        fetch("http://localhost:8000/alerts"),
+        fetch("http://localhost:8000/devices")
       ]);
 
-      // Process alerts data with proper severity handling
-      const processedAlerts = (alertsRes.data || []).map((alert) => ({
-          id: alert.id || Math.random().toString(36).substr(2, 9),
-          type: alert.type || "system",
-          severity: alert.severity || "low",
-          message: alert.message || "No message available",
-          timestamp: alert.timestamp || new Date().toISOString(),
-          device_id: alert.device_id || "",
-          device_name:
-          alert.device_name || getDeviceName(alert.device_id, devicesRes.data),
-          alert_type: alert.alert_type || "system",
-          status: alert.status || "unresolved",
-          component: alert.component || "Unknown",
-          location:
-          alert.location || getDeviceLocation(alert.device_id, devicesRes.data),
-        acknowledged: alert.acknowledged || false,
-        resolution_notes:
-          alert.resolution_notes || alert.resolutionNotes || null,
-        resolution_timestamp:
-          alert.resolution_timestamp || alert.resolutionTimestamp || null,
-        resolved_by: alert.resolved_by || alert.resolvedBy || null,
-      }));
+      if (!predictionsResponse.ok || !alertsResponse.ok || !devicesResponse.ok) {
+        throw new Error("Failed to fetch data");
+      }
 
-      // Process environmental alerts with proper severity handling
-      const processedEnvironmentalAlerts = (environmentalRes.data || []).map(
-        (alert) => ({
-          id: alert.id || Math.random().toString(36).substr(2, 9),
-          type: "environmental",
-          severity: alert.severity || "warning",
-          message: alert.description || "No message available",
-          timestamp: alert.start_time || new Date().toISOString(),
-          device_id: alert.affected_devices?.[0] || "",
-          device_name: getDeviceName(
-            alert.affected_devices?.[0],
-            devicesRes.data
-          ),
-          alert_type: "environmental",
-          status: "unresolved",
-          component: alert.type || "Environmental",
-          location: getDeviceLocation(
-            alert.affected_devices?.[0],
-            devicesRes.data
-          ),
-          affected_devices: alert.affected_devices || [],
-          acknowledged: alert.acknowledged || false,
-        })
-      );
+      const predictionsData = await predictionsResponse.json();
+      const alertsData = await alertsResponse.json();
+      const devicesData = await devicesResponse.json();
 
-      // Combine and sort all alerts
-      const allAlerts = [
-        ...processedAlerts,
-        ...processedEnvironmentalAlerts,
-      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      setAlerts(allAlerts);
-      setEnvironmentalAlerts(processedEnvironmentalAlerts);
-      setDevices(devicesRes.data || []);
-
-      // Fetch analysis data for all alerts
-      const analysisPromises = allAlerts.map(async (alert) => {
+      // Process alerts with improved error handling
+      const processedAlerts = alertsData.map(alert => {
         try {
-          const response = await axios.get(
-            `${API_BASE_URL}/predictions/analysis/${alert.id}`
-          );
-          return { [alert.id]: response.data };
-      } catch (error) {
-          console.error(
-            `Error fetching analysis for alert ${alert.id}:`,
-            error
-          );
-          return { [alert.id]: null };
+          return {
+            ...alert,
+            timestamp: new Date(alert.timestamp),
+            device_name: devicesData.find(device => device.id === alert.device_id)?.name || "Unknown Device",
+            severity: alert.severity || 5,
+            alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
+            acknowledged: alert.acknowledged || false
+          };
+        } catch (error) {
+          console.error("Error processing alert:", error, alert);
+          return null;
         }
-      });
+      }).filter(alert => alert !== null);
 
-      const analysisResults = await Promise.all(analysisPromises);
-      const combinedAnalysisData = analysisResults.reduce(
-        (acc, curr) => ({ ...acc, ...curr }),
-        {}
-      );
-      setAnalysisData(combinedAnalysisData);
+      setPredictedFailures(predictionsData);
+      setAlerts(processedAlerts);
+      setDevices(devicesData);
 
-      // Update statistics
-      const stats = {
-        total: allAlerts.length,
-        critical: allAlerts.filter(
-          (a) => !a.acknowledged && a.severity === "critical"
-        ).length,
-        warning: allAlerts.filter(
-          (a) => !a.acknowledged && a.severity === "warning"
-        ).length,
-        info: allAlerts.filter((a) => !a.acknowledged && a.severity === "info")
-          .length,
-        resolved: allAlerts.filter((a) => a.acknowledged).length,
-      };
-      setStatistics(stats);
+      // Update statistics with improved error handling
+      updateStatistics(predictionsData, processedAlerts);
 
       setError(null);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      setError("Failed to fetch alerts data. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
+      console.error("Error fetching data:", error);
+      setError("Failed to fetch data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update statistics to include both predictions and alerts
+  const updateStatistics = (predictions, alerts) => {
+    const stats = {
+      totalPredictions: predictions.length,
+      criticalIssues: predictions.filter(p => p.risk_level === "high").length,
+      mediumIssues: predictions.filter(p => p.risk_level === "medium").length,
+      lowIssues: predictions.filter(p => p.risk_level === "low").length,
+      totalAlerts: alerts.length,
+      criticalAlerts: alerts.filter(a => a.severity >= 7).length,
+      warningAlerts: alerts.filter(a => a.severity >= 4 && a.severity < 7).length,
+      infoAlerts: alerts.filter(a => a.severity < 4).length,
+      resolvedAlerts: alerts.filter(a => a.acknowledged).length
     };
+    setStatistics(stats);
+  };
 
   // Helper function to calculate device health
   const calculateDeviceHealth = (devices, sensorData, predictions) => {
@@ -339,29 +280,32 @@ const Dashboard = () => {
     return "low";
   };
 
-  // Update statistics to include both predictions and alerts
-  const updateStatistics = (predictions, alerts) => {
-    const stats = {
-      totalPredictions: predictions.length,
-      criticalIssues:
-        predictions.filter((p) => p.severity === "critical").length +
-        alerts.filter((a) => a.severity === "critical").length,
-      plannedMaintenance: maintenanceRecommendations.length,
-      resolvedIssues: [...predictions, ...alerts].filter(
-        (item) => item.status === "resolved"
-      ).length,
-      activeAlerts: alerts.filter((a) => a.status === "unresolved").length,
-      warningAlerts: alerts.filter((a) => a.severity === "warning").length,
-      criticalAlerts: alerts.filter((a) => a.severity === "critical").length,
-    };
-    setStatistics(stats);
-  };
-
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch prediction analysis for each alert after alerts are loaded
+  useEffect(() => {
+    const fetchAnalysis = async () => {
+      if (!alerts || alerts.length === 0) return;
+      const newAnalysisData = {};
+      await Promise.all(alerts.map(async (alert) => {
+        try {
+          const response = await fetch(`http://localhost:8000/predictions/analysis/${alert.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            newAnalysisData[alert.id] = data;
+          }
+        } catch (e) {
+          // Ignore errors for now
+        }
+      }));
+      setAnalysisData(newAnalysisData);
+    };
+    fetchAnalysis();
+  }, [alerts]);
 
   const getSeverityColor = (severity) => {
     const severityNum =
