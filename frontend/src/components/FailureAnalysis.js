@@ -55,12 +55,12 @@ const FailureAnalysis = () => {
       setLoading(true);
       const [failuresRes, statsRes, timelineRes] = await Promise.all([
         axios.get(
-          `http://localhost:8000/failures?type=${
+          `https://pmbi-backend.onrender.com/failures?type=${
             tabValue === 0 ? "hardware" : "software"
           }`
         ),
-        axios.get("http://localhost:8000/failure-stats"),
-        axios.get("http://localhost:8000/failure-timeline"),
+        axios.get("https://pmbi-backend.onrender.com/failure-stats"),
+        axios.get("https://pmbi-backend.onrender.com/failure-timeline"),
       ]);
 
       setFailures(failuresRes.data);

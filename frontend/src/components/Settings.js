@@ -70,7 +70,7 @@ const Settings = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/settings");
+        const response = await axios.get("https://pmbi-backend.onrender.com/settings");
         setSettings(response.data);
         setError(null);
       } catch (err) {
@@ -130,7 +130,7 @@ const Settings = () => {
     }
 
     try {
-      await axios.post("http://localhost:8000/settings", settings);
+      await axios.post("https://pmbi-backend.onrender.com/settings", settings);
       setSuccess(true);
       setIsDirty(false);
       setError(null);
@@ -145,7 +145,7 @@ const Settings = () => {
 
   const handleReset = async () => {
     try {
-      const response = await axios.get("http://localhost:8000/settings");
+      const response = await axios.get("https://pmbi-backend.onrender.com/settings");
       setSettings(response.data);
       setIsDirty(false);
       setError(null);

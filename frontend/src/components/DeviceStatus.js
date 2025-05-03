@@ -110,8 +110,8 @@ const DeviceStatus = () => {
     const fetchData = async () => {
       try {
         const [devicesResponse, sensorResponse] = await Promise.all([
-          axios.get("http://localhost:8000/device-status"),
-          axios.get("http://localhost:8000/sensor-data"),
+          axios.get("https://pmbi-backend.onrender.com/device-status"),
+          axios.get("https://pmbi-backend.onrender.com/sensor-data"),
         ]);
         setDevices(Object.values(devicesResponse.data));
         setSensorData(sensorResponse.data);
@@ -131,7 +131,7 @@ const DeviceStatus = () => {
   useEffect(() => {
     const fetchSensorData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/sensor-data");
+        const response = await axios.get("https://pmbi-backend.onrender.com/sensor-data");
         setSensorData((prevData) => {
           const newData = response.data;
           const mergedData = { ...prevData };

@@ -97,8 +97,8 @@ const Alerts = () => {
     setLoading(true);
     try {
       const [alertsResponse, devicesResponse] = await Promise.all([
-        fetch("http://localhost:8000/alerts"),
-        fetch("http://localhost:8000/devices"),
+        fetch("https://pmbi-backend.onrender.com/alerts"),
+        fetch("https://pmbi-backend.onrender.com/devices"),
       ]);
 
       if (!alertsResponse.ok || !devicesResponse.ok) {
@@ -259,7 +259,7 @@ const Alerts = () => {
     if (alert.acknowledged) {
       try {
         const response = await axios.get(
-          `http://localhost:8000/alerts/${alert.id}/notes`
+          `https://pmbi-backend.onrender.com/alerts/${alert.id}/notes`
         );
         setResolutionNotes(response.data.notes || "");
       } catch (error) {
@@ -284,7 +284,7 @@ const Alerts = () => {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
+        `https://pmbi-backend.onrender.com/alerts/${selectedAlert.id}/acknowledge`,
         {
           acknowledged: true,
           notes: resolutionNotes,

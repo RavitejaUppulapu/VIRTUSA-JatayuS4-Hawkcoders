@@ -86,7 +86,7 @@ import axios from "axios";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "https://pmbi-backend.onrender.com";
 
 const SEVERITY_COLORS = {
   critical: "#dc3545",
