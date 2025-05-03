@@ -68,6 +68,10 @@ ALERTS_FILE = "alerts.json"
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Track last alert time per device to avoid spamming
+last_alert_times = {}
+ALERT_GENERATION_COOLDOWN = 300  # 1 hour between alerts per device
+
 def save_alerts_to_disk():
     """Save alerts to disk"""
     try:
@@ -1794,21 +1798,58 @@ def calculate_health_score(device_data, device_alerts):
 
 # Add periodic alert generation
 @app.on_event("startup")
-@repeat_every(seconds=300)  # Generate new alerts every 5 minutes
+@repeat_every(seconds=300)  # Check every 5 minutes
 async def periodic_alert_generation():
     try:
-        # Generate new alerts
-        new_alerts = generate_mock_alerts()
-        
-        # Add new alerts to existing ones
-        alerts.extend(new_alerts)
-        
-        # Save to disk
-        save_alerts_to_disk()
-        
-        print(f"Generated {len(new_alerts)} new alerts")
+        now = datetime.now()
+        new_alerts = []
+        for device_id, device_data in devices.items():
+            # Get recent sensor data for this device
+            recent_data = sensor_history.get(device_id, [])[-10:]
+            if not recent_data:
+                continue
+            sensor_df = pd.DataFrame(recent_data)
+            # Use empty log data for now
+            log_df = pd.DataFrame([])
+            # Predict
+            try:
+                predictions = model.predict(sensor_df, log_df)
+            except Exception as e:
+                print(f"ML prediction error for {device_id}: {e}")
+                continue
+            # Only consider the last prediction
+            pred = predictions[-1] if len(predictions) else 0
+            if pred > 0.7:
+                # Check cooldown
+                last_time = last_alert_times.get(device_id)
+                if last_time and (now - last_time).total_seconds() < ALERT_GENERATION_COOLDOWN:
+                    continue
+                alert = {
+                    "id": str(uuid.uuid4()),
+                    "timestamp": now.isoformat(),
+                    "device_id": device_id,
+                    "alert_type": "PREDICTIVE_MAINTENANCE",
+                    "severity": int(pred * 10),
+                    "message": "High probability of device failure detected (ML)",
+                    "details": {
+                        "probability": float(pred),
+                        "sensor_readings": sensor_df.iloc[-1].to_dict(),
+                        "recommended_action": "Schedule maintenance check"
+                    },
+                    "acknowledged": False
+                }
+                new_alerts.append(alert)
+                alerts.append(alert)
+                last_alert_times[device_id] = now
+                # Update device status
+                devices[device_id]["last_check"] = now
+                if alert["severity"] > 7:
+                    devices[device_id]["status"] = "warning"
+        if new_alerts:
+            save_alerts_to_disk()
+            print(f"Generated {len(new_alerts)} ML-based alerts")
     except Exception as e:
-        print(f"Error generating periodic alerts: {str(e)}")
+        print(f"Error generating periodic ML alerts: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
