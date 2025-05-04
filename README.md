@@ -5,45 +5,45 @@ A comprehensive predictive maintenance system for banking infrastructure, levera
 ## Features
 
 - **Real-time Monitoring Dashboard**
-
-  - Device status tracking
-  - Sensor data visualization
-  - Health score monitoring
-  - Alert management
+  - Device status tracking and visualization
+  - Sensor data monitoring
+  - Health score analysis
+  - Alert management system
+  - AI-powered chat assistance
 
 - **Advanced Analytics**
-
   - Predictive maintenance forecasting
-  - Trend analysis
-  - Cost optimization
-  - Performance metrics
+  - Failure analysis and prediction
+  - Trend analysis and reporting
+  - Performance metrics tracking
+  - Cost optimization insights
 
 - **Infrastructure Management**
-  - Device inventory tracking
-  - Maintenance scheduling
-  - Alert history
-  - Cost tracking
+  - Device inventory and status tracking
+  - Maintenance scheduling and history
+  - Alert history and management
+  - Cost tracking and analysis
+  - Settings and configuration management
 
 ## Tech Stack
 
 ### Frontend
-
 - React.js
 - Material-UI
 - Recharts for data visualization
 - Axios for API communication
+- TypeScript (partial implementation)
 
 ### Backend
-
 - FastAPI (Python)
 - TensorFlow for ML models
-- SQLAlchemy for database
+- SQLAlchemy for database operations
 - Pandas for data processing
+- Machine Learning models for predictive analysis
 
 ## Getting Started
 
 ### Prerequisites
-
 - Node.js (v14 or higher)
 - Python 3.8+
 - pip
@@ -52,14 +52,12 @@ A comprehensive predictive maintenance system for banking infrastructure, levera
 ### Installation
 
 1. Clone the repository
-
 ```bash
 git clone https://github.com/RavitejaUppulapu/PMBI.git
 cd PMBI
 ```
 
 2. Set up the backend
-
 ```bash
 cd backend
 python -m venv venv
@@ -67,8 +65,8 @@ source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 python -m uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
-3. Set up the frontend
 
+3. Set up the frontend
 ```bash
 cd frontend
 npm install
@@ -76,7 +74,6 @@ npm start
 ```
 
 The application will be available at:
-
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
@@ -91,64 +88,58 @@ PMBI/
 │   │   │   ├── Dashboard.js
 │   │   │   ├── Alerts.js
 │   │   │   ├── FailureAnalysis.js
-│   │   │   ├── Layout.js
-│   │   │   ├── WhyChooseUs.js
+│   │   │   ├── DeviceStatus.js
+│   │   │   ├── DeviceInfo.js
+│   │   │   ├── AIChat.js
 │   │   │   ├── Reports.js
 │   │   │   ├── Settings.js
-│   │   │   ├── AIChat.js
-│   │   │   ├── Navigation.js
-│   │   │   └── DeviceStatus.js
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   ├── index.js
-│   │   ├── index.css
-│   │   └── reportWebVitals.js
+│   │   │   ├── MaintenanceTab.js
+│   │   │   ├── AlertDialog.js
+│   │   │   ├── WhyChooseUs.js
+│   │   │   ├── Layout.js
+│   │   │   └── Navigation.js
 │   ├── public/             # Static files
 │   ├── js/                 # JavaScript utilities
 │   ├── package.json
 │   ├── package-lock.json
-│   ├── nginx.conf
-│   └── Dockerfile
+│   └── nginx.conf
 ├── backend/                 # Backend application
 │   ├── app.py             # Main FastAPI application
 │   ├── ml_model.py        # Machine learning model implementation
 │   ├── requirements.txt   # Python dependencies
-│   └── ml/                # Machine learning utilities
+│   ├── ml/                # Machine learning utilities
+│   └── alerts.json        # Alert configurations
 ├── data/                   # Data storage directory
 ├── models/                 # Trained ML models
 ├── data_generator.py       # Data generation script
-├── test_model.py          # Model testing script
 ├── run.py                 # Main application runner
 ├── requirements.txt       # Python dependencies
-├── Dockerfile            # Docker configuration
-├── docker-compose.yml    # Docker compose configuration
-├── .gitignore           # Git ignore rules
-├── training_history.png  # Training history visualization
-├── feature_importance.png # Feature importance visualization
-└── confusion_matrix.png  # Model performance visualization
+├── .gitignore            # Git ignore rules
+└── training_history.png   # Training history visualization
 ```
 
 ## Key Features
 
 ### Real-time Monitoring
-
-- Temperature, humidity, and vibration monitoring
-- Device status tracking
+- Comprehensive device status tracking
+- Real-time sensor data monitoring
+- Health score analysis
 - Alert generation and management
+- AI-powered assistance
 
 ### Predictive Analytics
+- Advanced failure prediction
+- Maintenance scheduling optimization
+- Cost analysis and optimization
+- Trend analysis and reporting
+- Performance metrics tracking
 
-- Failure prediction
+### Infrastructure Management
+- Device inventory management
 - Maintenance scheduling
-- Cost optimization
-- Trend analysis
-
-### Reporting
-
-- Customizable dashboards
-- Historical data analysis
-- Cost tracking
-- Performance metrics
+- Alert history and management
+- Cost tracking and analysis
+- Configuration management
 
 ## Contributing
 
@@ -167,3 +158,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Material-UI for the component library
 - Recharts for the charting library
 - FastAPI for the backend framework
+- TensorFlow for machine learning capabilities
