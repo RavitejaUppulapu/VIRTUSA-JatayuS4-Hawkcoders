@@ -85,27 +85,30 @@ PMBI/
 ├── frontend/                 # Frontend application
 │   ├── src/                 # Source files
 │   │   ├── components/     # React components
-│   │   │   ├── Dashboard.js
-│   │   │   ├── Alerts.js
-│   │   │   ├── FailureAnalysis.js
-│   │   │   ├── DeviceStatus.js
-│   │   │   ├── DeviceInfo.js
-│   │   │   ├── AIChat.js
-│   │   │   ├── Reports.js
-│   │   │   ├── Settings.js
-│   │   │   ├── MaintenanceTab.js
-│   │   │   ├── AlertDialog.js
-│   │   │   ├── WhyChooseUs.js
-│   │   │   ├── Layout.js
-│   │   │   └── Navigation.js
-│   ├── public/             # Static files
-│   ├── js/                 # JavaScript utilities
-│   ├── package.json
-│   ├── package-lock.json
-│   └── nginx.conf
-├── backend/                 # Backend application
-│   ├── app.py             # Main FastAPI application
-│   ├── ml_model.py        # Machine learning model implementation
+│   │   │   ├── Dashboard.js        # Main dashboard with real-time monitoring
+│   │   │   ├── Dashboard.tsx       # TypeScript dashboard component
+│   │   │   ├── Alerts.js           # Alert management and notifications
+│   │   │   ├── FailureAnalysis.js  # Failure prediction and analysis
+│   │   │   ├── DeviceStatus.js     # Device health monitoring
+│   │   │   ├── DeviceInfo.js       # Detailed device information
+│   │   │   ├── AIChat.js           # AI-powered assistance
+│   │   │   ├── Reports.js          # Analytics and reporting
+│   │   │   ├── Settings.js         # System configuration
+│   │   │   ├── MaintenanceTab.js   # Maintenance scheduling
+│   │   │   ├── AlertDialog.js      # Alert notifications UI
+│   │   │   ├── WhyChooseUs.js      # Feature showcase
+│   │   │   ├── Layout.js           # Application layout
+│   │   │   └── Navigation.js       # Navigation components
+│   ├── public/             # Static assets
+│   │   ├── index.html     # HTML template
+│   │   └── assets/        # Images and media
+│   ├── js/                # JavaScript utilities
+│   ├── package.json       # Node.js dependencies
+│   ├── package-lock.json  # Dependency lock file
+│   └── nginx.conf         # Nginx configuration
+├── backend/                # Backend application
+│   ├── app.py             # FastAPI main application
+│   ├── ml_model.py        # ML model implementation
 │   ├── requirements.txt   # Python dependencies
 │   ├── ml/                # Machine learning utilities
 │   └── alerts.json        # Alert configurations
