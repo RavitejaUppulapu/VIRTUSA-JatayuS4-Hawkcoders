@@ -95,7 +95,7 @@ PMBI/
 │   │   │   ├── Reports.js          # Analytics and reporting
 │   │   │   ├── Settings.js         # System configuration
 │   │   │   ├── MaintenanceTab.js   # Maintenance scheduling
-│   │   │   ├── AlertDialog.js      # Alert notifications UI
+<!-- │   │   │   ├── AlertDialog.js      # Alert notifications UI -->
 │   │   │   ├── WhyChooseUs.js      # Feature showcase
 │   │   │   ├── Layout.js           # Application layout
 │   │   │   └── Navigation.js       # Navigation components
