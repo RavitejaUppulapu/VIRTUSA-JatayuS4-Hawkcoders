@@ -113,11 +113,6 @@ function App() {
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
     { text: "Device Status", icon: <DeviceIcon />, path: "/device-status" },
     { text: "Alerts", icon: <AlertIcon />, path: "/alerts" },
-    // {
-    //   text: "Failure Analysis",
-    //   icon: <FailureIcon />,
-    //   path: "/failure-analysis",
-    // },
     { text: "Reports", icon: <ReportIcon />, path: "/reports" },
     { text: "Settings", icon: <SettingsIcon />, path: "/settings" },
   ];
