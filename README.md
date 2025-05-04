@@ -86,16 +86,13 @@ PMBI/
 │   ├── src/                 # Source files
 │   │   ├── components/     # React components
 │   │   │   ├── Dashboard.js        # Main dashboard with real-time monitoring
-│   │   │   ├── Dashboard.tsx       # TypeScript dashboard component
 │   │   │   ├── Alerts.js           # Alert management and notifications
-│   │   │   ├── FailureAnalysis.js  # Failure prediction and analysis
 │   │   │   ├── DeviceStatus.js     # Device health monitoring
 │   │   │   ├── DeviceInfo.js       # Detailed device information
 │   │   │   ├── AIChat.js           # AI-powered assistance
 │   │   │   ├── Reports.js          # Analytics and reporting
 │   │   │   ├── Settings.js         # System configuration
 │   │   │   ├── MaintenanceTab.js   # Maintenance scheduling
-<!-- │   │   │   ├── AlertDialog.js      # Alert notifications UI -->
 │   │   │   ├── WhyChooseUs.js      # Feature showcase
 │   │   │   ├── Layout.js           # Application layout
 │   │   │   └── Navigation.js       # Navigation components
