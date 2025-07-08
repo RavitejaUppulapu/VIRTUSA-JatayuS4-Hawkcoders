@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable no-unused-vars */
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Box,
@@ -11,6 +12,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  IconButton,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -21,11 +23,14 @@ import {
   BugReport as FailureIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
+import MenuIcon from "@mui/icons-material/Menu";
+import Navigation from "./Navigation";
 
 const drawerWidth = 240;
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const menuItems = [
     { text: "Dashboard", icon: <DashboardIcon />, path: "/" },
@@ -43,92 +48,24 @@ const Layout = ({ children }) => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: `calc(100% - ${drawerWidth}px)`,
-          ml: `${drawerWidth}px`,
-          bgcolor: "primary.main",
-        }}
-      >
+      <AppBar position="fixed" sx={{ width: "100%", ml: 0, bgcolor: "primary.main" }}>
         <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={() => setDrawerOpen(true)}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
           <Typography variant="h6" noWrap component="div">
             Predictive Maintenance System
           </Typography>
         </Toolbar>
       </AppBar>
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            bgcolor: "background.paper",
-            overflowX: 'hidden',
-          },
-        }}
-        variant="permanent"
-        anchor="left"
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Menu
-          </Typography>
-        </Toolbar>
-        <Divider />
-        <List>
-          {menuItems.map((item) => (
-            <ListItem
-              button
-              key={item.text}
-              component={Link}
-              to={item.path}
-              selected={location.pathname === item.path}
-              sx={{
-                borderRadius: 2,
-                my: 0.5,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.main',
-                  color: '#fff',
-                  '& .MuiListItemIcon-root': {
-                    color: '#fff',
-                  },
-                  '& .MuiListItemText-primary': {
-                    color: '#fff',
-                    fontWeight: 600,
-                  },
-                },
-                '&:hover': {
-                  bgcolor: 'primary.light',
-                  color: 'primary.main',
-                  '& .MuiListItemIcon-root': {
-                    color: 'text.primary',
-                  },
-                  '& .MuiListItemText-primary': {
-                    color: 'text.primary',
-                  },
-                },
-                transition: 'background 0.2s, color 0.2s',
-                minHeight: 48,
-              }}
-            >
-              <ListItemIcon
-                sx={{
-                  color:
-                    location.pathname === item.path
-                      ? '#fff'
-                      : 'inherit',
-                  minWidth: 36,
-                }}
-              >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} sx={{ fontWeight: 500 }} />
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+      {/* Hamburger Navigation Drawer */}
+      <Navigation open={drawerOpen} setOpen={setDrawerOpen} />
       <Box
         component="main"
         sx={{
