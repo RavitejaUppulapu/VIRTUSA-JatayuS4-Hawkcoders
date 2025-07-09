@@ -214,6 +214,7 @@ const AIChat = () => {
                 onKeyPress={handleKeyPress}
                 variant="outlined"
                 size="small"
+                data-testid="ai-chat-input"
               />
               <IconButton
                 color="primary"

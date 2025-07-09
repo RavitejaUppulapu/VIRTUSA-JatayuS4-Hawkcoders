@@ -56,7 +56,9 @@ import {
 } from "recharts";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+
+// Ensure test data includes at least one unresolved and one critical alert for E2E tests to pass.
 
 const Alerts = () => {
   const [alerts, setAlerts] = useState([]);
@@ -110,41 +112,64 @@ const Alerts = () => {
       const devicesData = await devicesResponse.json();
 
       // Process alerts data with improved error handling
-      const processedAlerts = alertsData.map((alert) => {
-        try {
-          // Ensure all required fields are present
-          const processedAlert = {
-            ...alert,
-            timestamp: typeof alert.timestamp === 'string' ? alert.timestamp : (alert.timestamp && alert.timestamp.toISOString ? alert.timestamp.toISOString() : ''),
-            device_name: devicesData.find((device) => device.id === alert.device_id)?.name || "Unknown Device",
-            severity: alert.severity || 5, // Default to medium severity if not specified
-            alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
-            acknowledged: alert.acknowledged || false,
-            resolution_notes: alert.resolution_notes || "",
-            resolution_timestamp: alert.resolution_timestamp ? new Date(alert.resolution_timestamp) : null,
-            id: alert.id || uuidv4(),
-          };
+      const processedAlerts = alertsData
+        .map((alert) => {
+          try {
+            // Ensure all required fields are present
+            const processedAlert = {
+              ...alert,
+              timestamp:
+                typeof alert.timestamp === "string"
+                  ? alert.timestamp
+                  : alert.timestamp && alert.timestamp.toISOString
+                  ? alert.timestamp.toISOString()
+                  : "",
+              device_name:
+                devicesData.find((device) => device.id === alert.device_id)
+                  ?.name || "Unknown Device",
+              severity: alert.severity || 5, // Default to medium severity if not specified
+              alert_type:
+                alert.alert_type ||
+                (alert.severity >= 7
+                  ? "critical"
+                  : alert.severity >= 4
+                  ? "warning"
+                  : "info"),
+              acknowledged: alert.acknowledged || false,
+              resolution_notes: alert.resolution_notes || "",
+              resolution_timestamp: alert.resolution_timestamp
+                ? new Date(alert.resolution_timestamp)
+                : null,
+              id: alert.id || uuidv4(),
+            };
 
-          // Validate and fix any missing or invalid fields
-          if (!processedAlert.message) processedAlert.message = "No message provided";
-          if (!processedAlert.details) processedAlert.details = {};
+            // Validate and fix any missing or invalid fields
+            if (!processedAlert.message)
+              processedAlert.message = "No message provided";
+            if (!processedAlert.details) processedAlert.details = {};
 
-          return processedAlert;
-        } catch (error) {
-          console.error("Error processing alert:", error, alert);
-          return null;
-        }
-      }).filter(alert => alert !== null); // Remove any null alerts from processing errors
+            return processedAlert;
+          } catch (error) {
+            console.error("Error processing alert:", error, alert);
+            return null;
+          }
+        })
+        .filter((alert) => alert !== null); // Remove any null alerts from processing errors
 
       setAlerts(processedAlerts);
       setDevices(devicesData);
 
       // Update statistics with improved error handling
       const newStats = {
-        critical: processedAlerts.filter(a => !a.acknowledged && a.severity >= 7).length,
-        warning: processedAlerts.filter(a => !a.acknowledged && a.severity >= 4 && a.severity < 7).length,
-        info: processedAlerts.filter(a => !a.acknowledged && a.severity < 4).length,
-        resolved: processedAlerts.filter(a => a.acknowledged).length,
+        critical: processedAlerts.filter(
+          (a) => !a.acknowledged && a.severity >= 7
+        ).length,
+        warning: processedAlerts.filter(
+          (a) => !a.acknowledged && a.severity >= 4 && a.severity < 7
+        ).length,
+        info: processedAlerts.filter((a) => !a.acknowledged && a.severity < 4)
+          .length,
+        resolved: processedAlerts.filter((a) => a.acknowledged).length,
       };
       setStats(newStats);
 
@@ -182,33 +207,34 @@ const Alerts = () => {
 
       return {
         date: day, // Use 'date' as the key for XAxis
-        critical: currentAlerts.filter(
-          (a) => {
-            const alertDate = new Date(a.timestamp);
-            return !isNaN(alertDate.getTime()) &&
-              alertDate >= dayStart &&
-              alertDate < dayEnd &&
-              a.severity >= 7;
-          }
-        ).length,
-        warning: currentAlerts.filter(
-          (a) => {
-            const alertDate = new Date(a.timestamp);
-            return !isNaN(alertDate.getTime()) &&
-              alertDate >= dayStart &&
-              alertDate < dayEnd &&
-              a.severity >= 4 && a.severity < 7;
-          }
-        ).length,
-        info: currentAlerts.filter(
-          (a) => {
-            const alertDate = new Date(a.timestamp);
-            return !isNaN(alertDate.getTime()) &&
-              alertDate >= dayStart &&
-              alertDate < dayEnd &&
-              a.severity < 4;
-          }
-        ).length,
+        critical: currentAlerts.filter((a) => {
+          const alertDate = new Date(a.timestamp);
+          return (
+            !isNaN(alertDate.getTime()) &&
+            alertDate >= dayStart &&
+            alertDate < dayEnd &&
+            a.severity >= 7
+          );
+        }).length,
+        warning: currentAlerts.filter((a) => {
+          const alertDate = new Date(a.timestamp);
+          return (
+            !isNaN(alertDate.getTime()) &&
+            alertDate >= dayStart &&
+            alertDate < dayEnd &&
+            a.severity >= 4 &&
+            a.severity < 7
+          );
+        }).length,
+        info: currentAlerts.filter((a) => {
+          const alertDate = new Date(a.timestamp);
+          return (
+            !isNaN(alertDate.getTime()) &&
+            alertDate >= dayStart &&
+            alertDate < dayEnd &&
+            a.severity < 4
+          );
+        }).length,
       };
     });
   };
@@ -437,10 +463,12 @@ const Alerts = () => {
               dataKey="date"
               tickFormatter={(value) => {
                 const date = new Date(value);
-                return !isNaN(date.getTime()) ? date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                }) : value;
+                return !isNaN(date.getTime())
+                  ? date.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : value;
               }}
             />
             <YAxis />
@@ -789,6 +817,7 @@ const Alerts = () => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        data-testid="alert-details-dialog"
       >
         <DialogTitle
           sx={{
@@ -895,6 +924,7 @@ const Alerts = () => {
                         ? "Resolution notes are required"
                         : ""
                     }
+                    data-testid="resolution-notes-input"
                   />
                 </Grid>
               )}
