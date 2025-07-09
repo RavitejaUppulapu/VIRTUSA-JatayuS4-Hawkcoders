@@ -176,7 +176,11 @@ const AIChat = () => {
                         variant="body1"
                         sx={{ whiteSpace: "pre-wrap" }}
                       >
-                        {message.content}
+                        {Array.isArray(message.content.split("\n")) && message.content.includes("\n")
+                          ? message.content.split("\n").map((line, idx) => (
+                              <span key={idx}>{line}<br /></span>
+                            ))
+                          : message.content}
                       </Typography>
                     </Paper>
                   </Box>

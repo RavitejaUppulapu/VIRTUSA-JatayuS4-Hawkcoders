@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+    restart: unless-stopped
 
   frontend:
     build:
@@ -18,4 +19,5 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend 
+      - backend
+    restart: unless-stopped

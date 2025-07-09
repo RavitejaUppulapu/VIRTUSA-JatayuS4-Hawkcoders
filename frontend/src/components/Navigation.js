@@ -21,7 +21,7 @@ import {
 
 const drawerWidth = 240;
 
-const Navigation = () => {
+const Navigation = ({ open, setOpen }) => {
   return (
     <Drawer
       sx={{
@@ -32,14 +32,17 @@ const Navigation = () => {
           boxSizing: "border-box",
         },
       }}
-      variant="permanent"
+      variant="temporary"
       anchor="left"
+      open={open}
+      onClose={() => setOpen(false)}
+      ModalProps={{ keepMounted: true }}
     >
       <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
         <Typography variant="h6" noWrap component="div">
           Maintenance System
         </Typography>
-        <IconButton>
+        <IconButton onClick={() => setOpen(false)}>
           <ChevronLeftIcon />
         </IconButton>
       </Box>
@@ -57,7 +60,7 @@ const Navigation = () => {
           </ListItemIcon>
           <ListItemText primary="Alerts" />
         </ListItem>
-        <ListItem button component={Link} to="/device/status">
+        <ListItem button component={Link} to="/device-status">
           <ListItemIcon>
             <DevicesIcon />
           </ListItemIcon>
