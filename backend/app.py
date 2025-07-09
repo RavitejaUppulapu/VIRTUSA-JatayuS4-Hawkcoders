@@ -749,28 +749,67 @@ def send_notifications(alerts: List[dict]):
 @app.post("/ai-chat", summary="AI Chat", description="Interact with the AI assistant for maintenance and monitoring advice.")
 async def chat_with_ai(message: ChatMessage):
     try:
-        msg = message.message.lower().strip()
+        msg = message.message.lower()
         if msg in ["hi", "hello"]:
             response = "Hello! I'm your AI maintenance assistant. How can I help you today?"
             return {"response": response}
+        elif "critical device" in msg or "critical devices" in msg:
+            critical_devices = [d for d in devices.values() if d["status"] == "critical"]
+            if critical_devices:
+                response = "List of critical devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in critical_devices)
+            else:
+                response = "There are no devices currently in critical status."
+            return {"response": response}
+        elif (
+            "warning device" in msg or "warning devices" in msg
+        ):
+            warning_devices = [d for d in devices.values() if d["status"] == "warning"]
+            if warning_devices:
+                response = "List of warning devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in warning_devices)
+            else:
+                response = "There are no devices currently in warning status."
+            return {"response": response}
+        elif (
+            "operational device" in msg or "operational devices" in msg or
+            "working device" in msg or "working devices" in msg or
+            "devices in operation" in msg or "devices that are working" in msg
+        ):
+            operational_devices = [d for d in devices.values() if d["status"] == "operational"]
+            if operational_devices:
+                response = "List of operational devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in operational_devices)
+            else:
+                response = "There are no devices currently in operational status."
+            return {"response": response}
         else:
-            api_key ="AIzaSyBNKsEpoQI4MDqtV8Jpj44buWA12aKqSB4" # Store your Gemini API key in an environment variable
-            if not api_key:
-                return {"response": "Gemini API key not set. Please set GEMINI_API_KEY environment variable."}
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
-            system_prompt = (
-                "You are an AI assistant for an industrial predictive maintenance platform. "
-                "You help users with device health, alerts, maintenance schedules, and best practices. "
-                "Always answer in the context of predictive maintenance for industrial equipment, not personal tasks. "
-                "Keep your responses concise: reply in 1-2 sentences or 3-4 bullet points unless the user asks for more detail."
-                "\n"
-            )
-            full_prompt = system_prompt + "User: " + message.message
-            response = model.generate_content(full_prompt)
-            return {"response": response.text}
+            # Fallback to previous keyword-based response
+            response = get_mock_ai_response(msg)
+            return {"response": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def get_mock_ai_response(message: str) -> str:
+    # Simple keyword-based response system
+    if "temperature" in message:
+        return "High temperatures can indicate cooling system issues or overload. I recommend:\n1. Check cooling fans\n2. Verify airflow isn't blocked\n3. Monitor server load\n4. Ensure HVAC is functioning properly"
+    
+    elif "humidity" in message:
+        return "Abnormal humidity levels can damage equipment. Here's what to check:\n1. Check for water leaks\n2. Verify HVAC dehumidification\n3. Monitor condensation\n4. Consider adding humidity sensors"
+    
+    elif "vibration" in message:
+        return "Excessive vibration often indicates mechanical issues:\n1. Check for loose components\n2. Inspect fan bearings\n3. Verify equipment mounting\n4. Consider preventive maintenance"
+    
+    elif "maintenance" in message:
+        return "For maintenance best practices:\n1. Schedule regular inspections\n2. Keep detailed maintenance logs\n3. Monitor performance metrics\n4. Follow manufacturer guidelines\n5. Train staff on procedures"
+    
+    elif "alert" in message:
+        return "To manage alerts effectively:\n1. Set appropriate thresholds\n2. Prioritize critical alerts\n3. Document response procedures\n4. Maintain escalation protocols\n5. Review alert history regularly"
+    
+    elif "help" in message:
+        return "I can help you with:\n- Temperature issues\n- Humidity concerns\n- Vibration problems\n- Maintenance procedures\n- Alert management\n- Best practices\n\nJust ask about any of these topics!"
+    
+    else:
+        return "I'm here to help with maintenance and monitoring. You can ask about:\n- Device issues (temperature, humidity, vibration)\n- Maintenance procedures\n- Alert management\n- Best practices\n\nWhat would you like to know?"
+    
 
 @app.get("/failures")
 async def get_failures(type: Optional[str] = None):
