@@ -430,11 +430,11 @@ class MaintenancePlan(BaseModel):
     required_tools: List[str]
     skill_level: str
 
-@app.get("/")
+@app.get("/", summary="API Root", description="Check if the Predictive Maintenance API is running.")
 async def root():
     return {"message": "Predictive Maintenance API is running"}
 
-@app.get("/device-status")
+@app.get("/device-status", summary="Get Device Statuses", description="Retrieve the current status and health of all devices, including operational state and active alerts.")
 async def get_device_status():
     """Get current status of all devices"""
     try:
@@ -563,27 +563,27 @@ async def periodic_sensor_update_task() -> None:
         devices[device_id]["status"] = status_info["status"]
         devices[device_id]["status_message"] = status_info["message"]
 
-@app.get("/sensor-data")
+@app.get("/sensor-data", summary="Get All Sensor Data", description="Return the complete sensor history for all devices.")
 async def get_sensor_data():
     # Return the updated sensor history
     return sensor_history
 
-@app.get("/devices")
+@app.get("/devices", summary="List Devices", description="Get a list of all registered devices in the system.")
 async def get_devices():
     return list(devices.values())
 
-@app.get("/devices/{device_id}")
+@app.get("/devices/{device_id}", summary="Get Device by ID", description="Retrieve detailed information for a specific device by its ID.")
 async def get_device(device_id: str):
     if device_id not in devices:
         raise HTTPException(status_code=404, detail="Device not found")
     return devices[device_id]
 
-@app.post("/devices")
+@app.post("/devices", summary="Create Device", description="Register a new device in the system.")
 async def create_device(device: Device):
     devices[device.id] = device.dict()
     return device
 
-@app.get("/alerts")
+@app.get("/alerts", summary="List Alerts", description="Get all alerts, with optional filtering by severity, device, and resolution status.")
 async def get_alerts(
     severity: Optional[str] = None,
     device_id: Optional[str] = None,
@@ -625,7 +625,7 @@ async def get_alerts(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/predict", response_model=List[AlertResponse])
+@app.post("/predict", response_model=List[AlertResponse], summary="Predict Failures", description="Run predictive maintenance analysis and generate alerts for a device based on sensor and log data.")
 async def predict(request: PredictionRequest, background_tasks: BackgroundTasks):
     try:
         # Convert request data to DataFrames
@@ -672,7 +672,7 @@ async def predict(request: PredictionRequest, background_tasks: BackgroundTasks)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/alerts/{alert_id}/acknowledge")
+@app.post("/alerts/{alert_id}/acknowledge", summary="Acknowledge Alert", description="Acknowledge an alert and add resolution notes.")
 async def acknowledge_alert(alert_id: str, data: dict):
     """Acknowledge an alert and save resolution notes"""
     try:
@@ -695,7 +695,7 @@ async def acknowledge_alert(alert_id: str, data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/alerts/{alert_id}/notes")
+@app.get("/alerts/{alert_id}/notes", summary="Get Alert Notes", description="Retrieve resolution notes and timestamp for a specific alert.")
 async def get_alert_notes(alert_id: str):
     """Get resolution notes for an alert"""
     try:
@@ -709,18 +709,18 @@ async def get_alert_notes(alert_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/settings")
+@app.get("/settings", summary="Get Settings", description="Retrieve the current system settings, including thresholds and notification preferences.")
 async def get_settings():
     with settings_lock:
         return settings
 
-@app.post("/settings")
+@app.post("/settings", summary="Update Settings", description="Update the system's threshold and notification settings.")
 async def update_settings(new_settings: Settings):
     with settings_lock:
         settings.update(new_settings.dict())
     return settings
 
-@app.get("/health")
+@app.get("/health", summary="Health Check", description="Check the health status of the API, model, and data.")
 async def health_check():
     return {
         "status": "healthy",
@@ -743,7 +743,7 @@ def send_notifications(alerts: List[dict]):
         for alert in alerts:
             print(f"Sending SMS notification for alert {alert['id']}")
 
-@app.post("/ai-chat")
+@app.post("/ai-chat", summary="AI Chat", description="Interact with the AI assistant for maintenance and monitoring advice.")
 async def chat_with_ai(message: ChatMessage):
     try:
         # Mock AI responses based on keywords
@@ -775,7 +775,7 @@ def get_mock_ai_response(message: str) -> str:
     else:
         return "I'm here to help with maintenance and monitoring. You can ask about:\n- Device issues (temperature, humidity, vibration)\n- Maintenance procedures\n- Alert management\n- Best practices\n\nWhat would you like to know?"
 
-@app.get("/failures")
+@app.get("/failures", summary="List Failures", description="Get a list of all recorded failures, optionally filtered by type.")
 async def get_failures(type: Optional[str] = None):
     if failures is None:  # Safeguard against None
         return []
@@ -783,7 +783,7 @@ async def get_failures(type: Optional[str] = None):
         return [f for f in failures if f["type"] == type]
     return failures
 
-@app.get("/failure-stats")
+@app.get("/failure-stats", summary="Failure Statistics", description="Retrieve statistics about hardware and software failures, including counts and averages.")
 async def get_failure_stats():
     if failures is None:  # Safeguard against None
         return {
@@ -825,7 +825,7 @@ async def get_failure_stats():
         "component_distribution": component_dist
     }
 
-@app.get("/failure-timeline")
+@app.get("/failure-timeline", summary="Failure Timeline", description="Get a timeline of failures over the past 7 days, grouped by date and severity.")
 async def get_failure_timeline():
     if failures is None:  # Safeguard against None
         return []
@@ -842,7 +842,7 @@ async def get_failure_timeline():
         })
     return timeline
 
-@app.get("/alert-trends")
+@app.get("/alert-trends", summary="Alert Trends", description="View trends of critical and warning alerts over the past week.")
 async def get_alert_trends():
     # Group alerts by date and type
     trends = []
@@ -858,7 +858,7 @@ async def get_alert_trends():
         })
     return trends
 
-@app.get("/maintenance-costs")
+@app.get("/maintenance-costs", summary="Maintenance Costs", description="Retrieve the current preventive, corrective, and total maintenance costs.")
 async def get_maintenance_costs():
     return {
         "preventive": 250,
@@ -866,13 +866,13 @@ async def get_maintenance_costs():
         "total": 750
     }
 
-@app.get("/device-status/{device_id}")
+@app.get("/device-status/{device_id}", summary="Get Device Status by ID", description="Get the current status and health of a specific device by its ID.")
 async def get_device_info(device_id: str):
     if device_id not in devices:
         raise HTTPException(status_code=404, detail="Device not found")
     return devices[device_id]
 
-@app.get("/sensor-data/{device_id}")
+@app.get("/sensor-data/{device_id}", summary="Get Sensor Data by Device", description="Retrieve the sensor history for a specific device.")
 async def get_device_sensor_data(device_id: str):
     if device_id not in devices:
         raise HTTPException(status_code=404, detail="Device not found")
@@ -880,7 +880,7 @@ async def get_device_sensor_data(device_id: str):
     device_sensor_data = generate_sensor_history(device_id=device_id)
     return device_sensor_data.get(device_id, [])
 
-@app.get("/dashboard/kpis")
+@app.get("/dashboard/kpis", summary="Dashboard KPIs", description="Get high-level Key Performance Indicators (KPIs) for the dashboard, such as MTBF, MTTR, and OEE.")
 async def get_kpis():
     """Get high-level KPIs for the dashboard"""
     try:
@@ -926,7 +926,7 @@ async def get_kpis():
             detail="Failed to calculate KPIs. Please ensure all devices have required metrics."
         )
 
-@app.get("/dashboard/predictions")
+@app.get("/dashboard/predictions", summary="Dashboard Predictions", description="Get a list of predicted failures for all devices, including risk scores and estimated time to failure.")
 async def get_predictions():
     """Get list of predicted failures"""
     try:
@@ -1019,7 +1019,7 @@ Description: """
         print(f"Error generating GPT description: {e}")
         return f"{alert_type.capitalize()} alert affecting {', '.join(affected_devices)}. Severity: {severity}. Impact: {', '.join(impact)}."
 
-@app.get("/dashboard/environmental")
+@app.get("/dashboard/environmental", summary="Environmental Alerts", description="Retrieve environmental and unexpected issue alerts, such as weather or power events.")
 async def get_environmental_alerts():
     """Get environmental and unexpected issues"""
     try:
@@ -1078,7 +1078,7 @@ async def get_environmental_alerts():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/dashboard/sensor-health")
+@app.get("/dashboard/sensor-health", summary="Sensor Health", description="Get the health status and calibration information for all device sensors.")
 async def get_sensor_health():
     """Get sensor health status and calibration information"""
     try:
@@ -1125,7 +1125,7 @@ async def get_sensor_health():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/dashboard/export")
+@app.post("/dashboard/export", summary="Export Dashboard Data", description="Export dashboard data as a CSV file, filtered by device, location, severity, or date range.")
 async def export_data(
     device: Optional[str] = None,
     location: Optional[str] = None,
@@ -1228,7 +1228,7 @@ async def export_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/dashboard/maintenance-recommendations")
+@app.get("/dashboard/maintenance-recommendations", summary="Maintenance Recommendations", description="Get maintenance recommendations for devices based on their status and recent sensor data.")
 async def get_maintenance_recommendations():
     """Get maintenance recommendations for devices"""
     try:
@@ -1287,7 +1287,7 @@ async def get_maintenance_recommendations():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/dashboard/root-causes")
+@app.get("/dashboard/root-causes", summary="Root Cause Analysis", description="Retrieve root cause analysis data for common failure types and their prevention steps.")
 async def get_root_causes():
     """Get root cause analysis data"""
     try:
@@ -1359,7 +1359,7 @@ async def get_root_causes():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/predictions/analysis/{alert_id}")
+@app.get("/predictions/analysis/{alert_id}", summary="Prediction Analysis", description="Get a detailed analysis for a specific alert, including predicted failure date, causes, and resource requirements.")
 async def get_prediction_analysis(alert_id: str):
     """Get detailed analysis for a specific alert"""
     try:
@@ -1437,7 +1437,7 @@ async def get_prediction_analysis(alert_id: str):
             resource_requirements={"maintenance_technician": 1}
         )
 
-@app.post("/predictions/move-to-maintenance/{alert_id}")
+@app.post("/predictions/move-to-maintenance/{alert_id}", summary="Move Alert to Maintenance", description="Move a specific alert to the maintenance tab and update its status.")
 async def move_to_maintenance(alert_id: str):
     """Move an alert to maintenance tab"""
     try:
@@ -1453,7 +1453,7 @@ async def move_to_maintenance(alert_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/maintenance/plan/{alert_id}")
+@app.get("/maintenance/plan/{alert_id}", summary="Maintenance Plan", description="Retrieve a maintenance plan for a specific alert, including steps, tools, and skill level required.")
 async def get_maintenance_plan(alert_id: str):
     """Get maintenance plan for an alert"""
     try:
@@ -1592,7 +1592,7 @@ async def get_maintenance_plan(alert_id: str):
             "skill_level": "Basic"
         }
 
-@app.get("/dashboard/statistics")
+@app.get("/dashboard/statistics", summary="Dashboard Statistics", description="Get statistics for the dashboard, including alert and device counts by status.")
 async def get_dashboard_statistics():
     """Get dashboard statistics"""
     try:
@@ -1626,7 +1626,7 @@ async def get_dashboard_statistics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/reports/device-metrics")
+@app.get("/reports/device-metrics", summary="Device Metrics Report", description="Get detailed device metrics for reporting, including sensor trends and health scores.")
 async def get_device_metrics():
     """Get device metrics for reports"""
     try:
@@ -1669,7 +1669,7 @@ async def get_device_metrics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/reports/alert-analysis")
+@app.get("/reports/alert-analysis", summary="Alert Analysis Report", description="Get a report analyzing alerts, including trends and device-wise distribution.")
 async def get_alert_analysis():
     """Get alert analysis for reports"""
     try:
@@ -1730,7 +1730,7 @@ async def get_alert_analysis():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/reports/maintenance-analysis")
+@app.get("/reports/maintenance-analysis", summary="Maintenance Analysis Report", description="Get a report analyzing maintenance activities, costs, and trends.")
 async def get_maintenance_analysis():
     """Get maintenance analysis for reports"""
     try:
