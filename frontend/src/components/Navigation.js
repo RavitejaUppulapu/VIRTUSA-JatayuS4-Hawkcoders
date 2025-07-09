@@ -17,6 +17,8 @@ import {
   Settings as SettingsIcon,
   Devices as DevicesIcon,
   ChevronLeft as ChevronLeftIcon,
+  Assessment as AssessmentIcon,
+  Info as InfoIcon,
 } from "@mui/icons-material";
 
 const drawerWidth = 240;
@@ -71,6 +73,18 @@ const Navigation = ({ open, setOpen }) => {
             <SettingsIcon />
           </ListItemIcon>
           <ListItemText primary="Settings" />
+        </ListItem>
+        <ListItem button component={Link} to="/reports">
+          <ListItemIcon>
+            <AssessmentIcon />
+          </ListItemIcon>
+          <ListItemText primary="Reports" />
+        </ListItem>
+        <ListItem button component={Link} to="/why-choose-us">
+          <ListItemIcon>
+            <InfoIcon />
+          </ListItemIcon>
+          <ListItemText primary="Why Choose Us" />
         </ListItem>
       </List>
     </Drawer>
