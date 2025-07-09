@@ -22,6 +22,10 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   LineChart,
@@ -121,21 +125,25 @@ const Reports = () => {
   const getFilteredSensorData = () => {
     if (!deviceMetrics.length) return [];
 
-    const device = deviceMetrics.find(d => d.device_id === selectedDevice);
+    const device = deviceMetrics.find((d) => d.device_id === selectedDevice);
     if (!device || !device.sensor_metrics) return [];
 
     const metrics = device.sensor_metrics[selectedMetric];
     if (!metrics) return [];
 
-    return [{
-      name: "Current",
-      value: metrics.current,
-      average: metrics.average,
-      min: metrics.min,
-      max: metrics.max,
-      trend: metrics.trend
-    }];
+    return [
+      {
+        name: "Current",
+        value: metrics.current,
+        average: metrics.average,
+        min: metrics.min,
+        max: metrics.max,
+        trend: metrics.trend,
+      },
+    ];
   };
+
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const exportToPDF = async () => {
     const input = document.getElementById("reports-container");
@@ -152,13 +160,29 @@ const Reports = () => {
 
     pdf.setFontSize(18);
     pdf.text("Predictive Maintenance Report", 20, 20);
-    pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.addImage(
+      imgData,
+      "PNG",
+      imgX,
+      imgY,
+      imgWidth * ratio,
+      imgHeight * ratio
+    );
     pdf.save("maintenance-report.pdf");
+  };
+
+  const handleExport = () => {
+    setShowExportDialog(true);
   };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -173,8 +197,13 @@ const Reports = () => {
   }
 
   return (
-    <Box p={3} id="reports-container">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box p={3} id="reports-container" data-testid="reports-container">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4">Maintenance Reports</Typography>
         <Box>
           <Tooltip title="Refresh Data">
@@ -186,14 +215,19 @@ const Reports = () => {
             variant="contained"
             color="primary"
             startIcon={<DownloadIcon />}
-            onClick={exportToPDF}
+            onClick={handleExport}
+            data-testid="export-button"
           >
-            Export as PDF
+            Export
           </Button>
         </Box>
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mb: 2, display: "block" }}
+      >
         Last Updated: {lastUpdate.toLocaleString()}
       </Typography>
 
@@ -251,9 +285,9 @@ const Reports = () => {
       <Grid container spacing={3}>
         {/* Alert Summary */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2 }} data-testid="alert-analysis-report">
             <Typography variant="h6" gutterBottom>
-              Alert Summary
+              Alert Analysis
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
@@ -310,9 +344,9 @@ const Reports = () => {
 
         {/* Device Health Distribution */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2 }} data-testid="device-metrics-report">
             <Typography variant="h6" gutterBottom>
-              Device Health Distribution
+              Device Metrics
             </Typography>
             <Box height={300}>
               <ResponsiveContainer width="100%" height="100%">
@@ -339,9 +373,9 @@ const Reports = () => {
 
         {/* Alert Trends */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2 }} data-testid="maintenance-analysis-report">
             <Typography variant="h6" gutterBottom>
-              Alert Trends (Last 7 Days)
+              Maintenance Analysis
             </Typography>
             <Box height={300}>
               <ResponsiveContainer width="100%" height="100%">
@@ -351,9 +385,17 @@ const Reports = () => {
                   <YAxis />
                   <RechartsTooltip />
                   <Legend />
-                  <Bar dataKey="critical" fill="#f44336" name="Critical Alerts" />
+                  <Bar
+                    dataKey="critical"
+                    fill="#f44336"
+                    name="Critical Alerts"
+                  />
                   <Bar dataKey="warning" fill="#ff9800" name="Warning Alerts" />
-                  <Bar dataKey="resolved" fill="#4caf50" name="Resolved Alerts" />
+                  <Bar
+                    dataKey="resolved"
+                    fill="#4caf50"
+                    name="Resolved Alerts"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Box>
@@ -416,6 +458,28 @@ const Reports = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Export Dialog */}
+      <Dialog
+        open={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        data-testid="export-dialog"
+      >
+        <DialogTitle>Export Report</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Choose the format for your report export.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowExportDialog(false)}>Cancel</Button>
+          <Button onClick={exportToPDF} variant="contained">
+            Export as PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

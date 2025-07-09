@@ -19,7 +19,7 @@ import openai
 from dotenv import load_dotenv
 from fastapi import HTTPException
 import requests
-import google.generativeai as genai
+# import google.generativeai as genai
 
 app = FastAPI(title="Predictive Maintenance API")
 

@@ -1,0 +1,49 @@
+{
+  "devices": [
+    {
+      "device_id": "device_1",
+      "device_name": "HVAC Unit 1",
+      "location": "Building A - Floor 1",
+      "type": "HVAC",
+      "health_score": 85,
+      "uptime_percentage": 99.2,
+      "last_maintenance": "2025-01-15T00:00:00",
+      "next_maintenance": "2025-02-15T00:00:00",
+      "total_alerts": 2,
+      "resolved_alerts": 1,
+      "active_alerts": 1,
+      "sensor_trends": {
+        "temperature": "stable",
+        "humidity": "increasing",
+        "pressure": "stable",
+        "vibration": "stable"
+      }
+    },
+    {
+      "device_id": "device_2",
+      "device_name": "Power Generator 2",
+      "location": "Building B - Basement",
+      "type": "Power",
+      "health_score": 92,
+      "uptime_percentage": 99.8,
+      "last_maintenance": "2025-01-10T00:00:00",
+      "next_maintenance": "2025-02-28T00:00:00",
+      "total_alerts": 1,
+      "resolved_alerts": 0,
+      "active_alerts": 1,
+      "sensor_trends": {
+        "voltage": "stable",
+        "current": "stable",
+        "temperature": "increasing",
+        "fuel_level": "decreasing"
+      }
+    }
+  ],
+  "summary": {
+    "total_devices": 5,
+    "average_health_score": 88.5,
+    "average_uptime": 99.1,
+    "devices_needing_maintenance": 2,
+    "devices_with_alerts": 3
+  }
+}

@@ -1,181 +1,164 @@
 import React from "react";
-import { Box, Typography, Grid, Card, CardContent, Container, Divider, Paper } from "@mui/material";
 import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Paper,
+  Chip,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
+import {
+  CheckCircle as CheckCircleIcon,
+  TrendingUp as TrendingUpIcon,
   Security as SecurityIcon,
   Speed as SpeedIcon,
-  Analytics as AnalyticsIcon,
   Support as SupportIcon,
-  MonetizationOn as MonetizationOnIcon,
-  TrendingUp as TrendingUpIcon,
-  IntegrationInstructions as IntegrationIcon,
-  Nature as NatureIcon,
-  VerifiedUser as VerifiedUserIcon,
+  Analytics as AnalyticsIcon,
   Build as BuildIcon,
-  Assessment as AssessmentIcon,
-  Timeline as TimelineIcon,
-  Storage as StorageIcon,
-  CloudQueue as CloudIcon,
-  DevicesOther as DevicesIcon,
+  Warning as WarningIcon,
+  LocalHospital as HospitalIcon,
+  DirectionsCar as CarIcon,
 } from "@mui/icons-material";
 
 const WhyChooseUs = () => {
   const features = [
-    // {
-    //   icon: <SecurityIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-    //   title: "Advanced Security",
-    //   description:
-    //     "Enterprise-grade security with end-to-end encryption, role-based access control, and compliance with industry standards like ISO 27001 and SOC 2.",
-    // },
     {
-      icon: <SpeedIcon sx={{ fontSize: 40, color: "primary.main" }} />,
+      title: "Advanced AI-Powered Predictions",
+      description:
+        "Our machine learning algorithms provide accurate failure predictions with 95%+ accuracy.",
+      icon: <AnalyticsIcon color="primary" />,
+    },
+    {
       title: "Real-time Monitoring",
       description:
-        "Instant alerts and 24/7 monitoring with sub-second response times, enabling proactive maintenance and rapid issue resolution.",
+        "24/7 monitoring of all critical systems with instant alert notifications.",
+      icon: <SpeedIcon color="primary" />,
     },
     {
-      icon: <AnalyticsIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "AI-Powered Analytics",
+      title: "Comprehensive Analytics",
       description:
-        "Advanced machine learning algorithms predict failures before they occur, with 95% accuracy in failure prediction and root cause analysis.",
-    },
-    // {
-    //   icon: <SupportIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-    //   title: "24/7 Expert Support",
-    //   description:
-    //     "Round-the-clock technical support with dedicated account managers and certified maintenance experts at your service.",
-    // },
-    {
-      icon: <MonetizationOnIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Cost Optimization",
-      description:
-        "Reduce maintenance costs by up to 30% through predictive maintenance and optimized resource allocation.",
+        "Detailed reports and insights to optimize maintenance schedules and reduce costs.",
+      icon: <TrendingUpIcon color="primary" />,
     },
     {
-      icon: <TrendingUpIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Scalable Solution",
+      title: "Expert Support",
       description:
-        "Seamlessly scale from single-site to multi-site operations with our cloud-native architecture.",
+        "Round-the-clock technical support from certified maintenance professionals.",
+      icon: <SupportIcon color="primary" />,
     },
     {
-      icon: <IntegrationIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Seamless Integration",
+      title: "Cost Reduction",
       description:
-        "Pre-built integrations with major ERP, CMMS, and IoT platforms, including SAP, Oracle, and Siemens.",
+        "Reduce maintenance costs by up to 40% through predictive maintenance strategies.",
+      icon: <CheckCircleIcon color="primary" />,
     },
     {
-      icon: <NatureIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Sustainability",
+      title: "Enhanced Security",
       description:
-        "Reduce energy consumption by up to 25% and extend equipment lifespan through optimized maintenance schedules.",
-    },
-    // {
-    //   icon: <VerifiedUserIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-    //   title: "Compliance Ready",
-    //   description:
-    //     "Built-in compliance with ISO 55000, IEC 62443, and industry-specific regulations for manufacturing and utilities.",
-    // },
-    {
-      icon: <BuildIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Customizable Workflows",
-      description:
-        "Tailor maintenance workflows, alerts, and reports to match your specific business processes and requirements.",
-    },
-    {
-      icon: <AssessmentIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Advanced Analytics",
-      description:
-        "Comprehensive dashboards and reports with drill-down capabilities for deep insights into equipment performance.",
-    },
-    {
-      icon: <TimelineIcon sx={{ fontSize: 40, color: "primary.main" }} />,
-      title: "Predictive Timeline",
-      description:
-        "Visual timeline of predicted maintenance needs and resource requirements for better planning and budgeting.",
+        "Enterprise-grade security with encrypted data transmission and secure cloud storage.",
+      icon: <SecurityIcon color="primary" />,
     },
   ];
 
-  const industryBenefits = [
-    {
+  const industryBenefits = {
+    manufacturing: {
       title: "Manufacturing",
       benefits: [
-        "Reduce unplanned downtime by up to 45%",
-        "Optimize production line efficiency",
-        "Extend equipment lifespan",
-        "Improve quality control"
-      ]
+        "Prevent production line downtime",
+        "Optimize equipment lifespan",
+        "Reduce maintenance costs",
+        "Improve product quality",
+      ],
+      icon: <BuildIcon />,
     },
-    {
+    energy: {
       title: "Energy & Utilities",
       benefits: [
-        "Prevent critical infrastructure failures",
-        "Optimize power generation efficiency",
-        "Reduce maintenance costs",
-        "Ensure regulatory compliance"
-      ]
+        "Prevent power outages",
+        "Optimize energy efficiency",
+        "Ensure regulatory compliance",
+        "Reduce environmental impact",
+      ],
+      icon: <WarningIcon />,
     },
-    {
+    healthcare: {
       title: "Healthcare",
       benefits: [
         "Ensure medical equipment reliability",
-        "Maintain critical life support systems",
+        "Maintain patient safety",
         "Comply with healthcare regulations",
-        "Optimize facility management"
-      ]
+        "Reduce equipment downtime",
+      ],
+      icon: <HospitalIcon />,
     },
-    {
+    transportation: {
       title: "Transportation",
       benefits: [
-        "Prevent fleet breakdowns",
-        "Optimize maintenance schedules",
-        "Reduce operational costs",
-        "Improve safety compliance"
-      ]
-    }
-  ];
+        "Prevent vehicle breakdowns",
+        "Optimize fleet maintenance",
+        "Ensure passenger safety",
+        "Reduce fuel consumption",
+      ],
+      icon: <CarIcon />,
+    },
+  };
 
-  const businessImpact = [
+  const testimonials = [
     {
-      metric: "30%",
-      title: "Reduction in Unplanned Downtime",
-      description: "Our clients have seen significant improvements in equipment uptime and reliability."
+      name: "John Smith",
+      role: "Maintenance Manager",
+      company: "TechCorp Industries",
+      quote:
+        "This platform has revolutionized our maintenance operations. We've reduced downtime by 60% and saved over $500K annually.",
     },
     {
-      metric: "25%",
-      title: "Lower Maintenance Costs",
-      description: "Predictive scheduling and resource optimization reduce unnecessary maintenance spend."
+      name: "Sarah Johnson",
+      role: "Operations Director",
+      company: "PowerGrid Solutions",
+      quote:
+        "The predictive capabilities are incredible. We can now prevent issues before they become problems.",
     },
     {
-      metric: "12 Months",
-      title: "Average ROI Period",
-      description: "Most customers achieve a full return on investment within the first year."
+      name: "Mike Chen",
+      role: "Facility Manager",
+      company: "Healthcare Plus",
+      quote:
+        "Reliability is critical in healthcare. This system ensures our equipment is always operational when needed.",
     },
-    {
-      metric: "95%",
-      title: "Prediction Accuracy",
-      description: "Our AI models achieve high accuracy in predicting potential failures."
-    }
   ];
 
   return (
-    <Container maxWidth="lg">
-      <Box py={6}>
-        <Typography variant="h3" gutterBottom align="center" color="primary">
-          Why Choose Our Predictive Maintenance Platform?
-        </Typography>
-        <Typography variant="h6" paragraph align="center" color="text.secondary">
-          Transform your maintenance operations with our industry-leading AI-powered solution
-        </Typography>
+    <Box p={3} data-testid="why-choose-us-content">
+      <Typography variant="h3" gutterBottom align="center" color="primary">
+        Why Choose Our Predictive Maintenance Platform?
+      </Typography>
 
-        {/* Features Grid */}
-        <Grid container spacing={3} mt={4}>
+      <Typography variant="h6" align="center" color="text.secondary" paragraph>
+        Transform your maintenance operations with cutting-edge AI technology
+        and proven results
+      </Typography>
+
+      {/* Features Section */}
+      <Box mt={6} data-testid="features-section">
+        <Typography variant="h4" gutterBottom align="center">
+          Features
+        </Typography>
+        <Grid container spacing={3}>
           {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card elevation={2} sx={{ height: '100%' }}>
-                <CardContent sx={{ textAlign: "center", p: 3 }}>
-                  {feature.icon}
-                  <Typography variant="h6" gutterBottom mt={2}>
-                    {feature.title}
-                  </Typography>
+            <Grid item xs={12} md={6} lg={4} key={index}>
+              <Card sx={{ height: "100%", p: 2 }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    {feature.icon}
+                    <Typography variant="h6" ml={1}>
+                      {feature.title}
+                    </Typography>
+                  </Box>
                   <Typography variant="body2" color="text.secondary">
                     {feature.description}
                   </Typography>
@@ -184,128 +167,95 @@ const WhyChooseUs = () => {
             </Grid>
           ))}
         </Grid>
+      </Box>
 
-        {/* Industry Benefits */}
-        <Box mt={8}>
-          <Typography variant="h4" gutterBottom align="center">
-            Industry-Specific Benefits
-          </Typography>
-          <Grid container spacing={3} mt={2}>
-            {industryBenefits.map((industry, index) => (
-              <Grid item xs={12} md={6} key={index}>
-                <Paper elevation={2} sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom color="primary">
+      {/* Industry Benefits Section */}
+      <Box mt={8} data-testid="industry-benefits">
+        <Typography variant="h4" gutterBottom align="center">
+          Industry-Specific Benefits
+        </Typography>
+        <Grid container spacing={3}>
+          {Object.entries(industryBenefits).map(([key, industry]) => (
+            <Grid item xs={12} md={6} key={key}>
+              <Paper sx={{ p: 3, height: "100%" }}>
+                <Box display="flex" alignItems="center" mb={2}>
+                  {industry.icon}
+                  <Typography variant="h6" ml={1}>
                     {industry.title}
                   </Typography>
-                  <ul style={{ paddingLeft: '20px' }}>
-                    {industry.benefits.map((benefit, idx) => (
-                      <li key={idx}>
-                        <Typography variant="body2" color="text.secondary">
-                          {benefit}
-                        </Typography>
-                      </li>
-                    ))}
-                  </ul>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
+                </Box>
+                <List dense>
+                  {industry.benefits.map((benefit, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText primary={benefit} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-        {/* Business Impact */}
-        <Box mt={8}>
-          <Typography variant="h4" gutterBottom align="center">
-            Proven Business Impact
-          </Typography>
-          <Grid container spacing={3} mt={2}>
-            {businessImpact.map((impact, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <Card elevation={2} sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'stretch', minHeight: 240 }}>
-                  <CardContent sx={{ textAlign: "center", flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography variant="h3" color="primary" gutterBottom>
-                      {impact.metric}
-                    </Typography>
-                    <Typography variant="h6" gutterBottom>
-                      {impact.title}
+      {/* Testimonials Section */}
+      <Box mt={8} data-testid="testimonials">
+        <Typography variant="h4" gutterBottom align="center">
+          What Our Clients Say
+        </Typography>
+        <Grid container spacing={3}>
+          {testimonials.map((testimonial, index) => (
+            <Grid item xs={12} md={4} key={index}>
+              <Card sx={{ height: "100%", p: 2 }}>
+                <CardContent>
+                  <Typography
+                    variant="body1"
+                    paragraph
+                    sx={{ fontStyle: "italic" }}
+                  >
+                    "{testimonial.quote}"
+                  </Typography>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      {testimonial.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {impact.description}
+                      {testimonial.role}
                     </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
+                    <Chip
+                      label={testimonial.company}
+                      size="small"
+                      color="primary"
+                      sx={{ mt: 1 }}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-        {/* Technology Stack */}
-        <Box mt={8}>
-          <Typography variant="h4" gutterBottom align="center">
-            Advanced Technology Stack
-          </Typography>
-          <Grid container spacing={3} mt={2}>
-            <Grid item xs={12} md={4}>
-              <Card elevation={2} sx={{ height: '100%', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'stretch' }}>
-                <CardContent sx={{ textAlign: 'left', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <AssessmentIcon sx={{ fontSize: 40, color: "primary.main" }} />
-                  <Typography variant="h6" gutterBottom mt={2}>
-                    AI/ML Engine
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Powered by advanced LSTM and GPT models for predictive analytics, root cause analysis, and intelligent maintenance recommendations.
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Enables proactive decision-making and reduces downtime.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card elevation={2} sx={{ height: '100%', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'stretch' }}>
-                <CardContent sx={{ textAlign: 'left', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <DevicesIcon sx={{ fontSize: 40, color: "primary.main" }} />
-                  <Typography variant="h6" gutterBottom mt={2}>
-                    IoT Integration
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Support for all major IoT protocols and device manufacturers for seamless connectivity.
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Ensures real-time data flow and unified device management.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card elevation={2} sx={{ height: '100%', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'stretch' }}>
-                <CardContent sx={{ textAlign: 'left', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <StorageIcon sx={{ fontSize: 40, color: "primary.main" }} />
-                  <Typography variant="h6" gutterBottom mt={2}>
-                    Data Management
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Advanced data processing with real-time analytics and historical insights for actionable intelligence.
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Secure, scalable, and compliant with industry standards.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-
-        {/* Call to Action */}
-        <Box mt={8} textAlign="center">
+      {/* Call to Action */}
+      <Box mt={8} textAlign="center">
+        <Paper sx={{ p: 4, bgcolor: "primary.main", color: "white" }}>
           <Typography variant="h5" gutterBottom>
             Ready to Transform Your Maintenance Operations?
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
-            Join industry leaders who have already revolutionized their maintenance processes
+          <Typography variant="body1" paragraph>
+            Join hundreds of companies that have already revolutionized their
+            maintenance with our platform.
           </Typography>
-        </Box>
+          <Chip
+            label="Get Started Today"
+            color="secondary"
+            sx={{ fontSize: "1.1rem", p: 1 }}
+          />
+        </Paper>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

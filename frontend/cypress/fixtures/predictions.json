@@ -1,0 +1,44 @@
+[
+  {
+    "device_id": "device_1",
+    "device_name": "HVAC Unit 1",
+    "predicted_failure_date": "2025-02-15T00:00:00",
+    "days_remaining": 19,
+    "risk_score": 0.75,
+    "failure_probability": "High",
+    "affected_components": ["compressor", "fan_motor"],
+    "recommended_actions": [
+      "Schedule preventive maintenance",
+      "Monitor temperature sensors",
+      "Check refrigerant levels"
+    ]
+  },
+  {
+    "device_id": "device_2",
+    "device_name": "Power Generator 2",
+    "predicted_failure_date": "2025-02-28T00:00:00",
+    "days_remaining": 32,
+    "risk_score": 0.45,
+    "failure_probability": "Medium",
+    "affected_components": ["fuel_system", "cooling_system"],
+    "recommended_actions": [
+      "Inspect fuel filters",
+      "Check coolant levels",
+      "Test backup systems"
+    ]
+  },
+  {
+    "device_id": "device_3",
+    "device_name": "HVAC Unit 3",
+    "predicted_failure_date": "2025-02-10T00:00:00",
+    "days_remaining": 14,
+    "risk_score": 0.85,
+    "failure_probability": "Critical",
+    "affected_components": ["thermostat", "control_board"],
+    "recommended_actions": [
+      "Immediate inspection required",
+      "Replace control board",
+      "Calibrate sensors"
+    ]
+  }
+]

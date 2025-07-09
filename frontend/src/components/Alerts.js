@@ -524,7 +524,7 @@ const Alerts = () => {
         alignItems="center"
         minHeight="200px"
       >
-        <CircularProgress />
+        <CircularProgress data-testid="loading-spinner" />
       </Box>
     );
   }
@@ -624,7 +624,7 @@ const Alerts = () => {
       </Grid>
 
       {/* Alert Trends Chart */}
-      {renderAlertTrends()}
+      <Box data-testid="alert-trends-chart">{renderAlertTrends()}</Box>
 
       {/* Tabs and Filters */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -635,8 +635,8 @@ const Alerts = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab label="Active Alerts" />
-            <Tab label="Resolved Alerts" />
+            <Tab label="Active Alerts" data-testid="active-alerts-tab" />
+            <Tab label="Resolved Alerts" data-testid="resolved-alerts-tab" />
           </Tabs>
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
@@ -780,6 +780,7 @@ const Alerts = () => {
                       size="small"
                       onClick={() => handleViewDetails(alert)}
                       color="primary"
+                      aria-label="View Details"
                     >
                       <VisibilityIcon />
                     </IconButton>
@@ -790,6 +791,7 @@ const Alerts = () => {
                         size="small"
                         onClick={() => handleViewDetails(alert)}
                         color="success"
+                        aria-label="Acknowledge"
                       >
                         <DoneIcon />
                       </IconButton>
@@ -798,6 +800,19 @@ const Alerts = () => {
                 </TableCell>
               </TableRow>
             ))}
+            {paginatedAlerts.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ py: 4 }}
+                  >
+                    No alerts found
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
         <TablePagination
@@ -808,6 +823,7 @@ const Alerts = () => {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          data-testid="pagination-select"
         />
       </TableContainer>
 

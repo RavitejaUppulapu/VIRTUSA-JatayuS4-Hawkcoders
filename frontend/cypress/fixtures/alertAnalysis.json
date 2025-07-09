@@ -1,0 +1,41 @@
+{
+  "alert_trends": {
+    "daily_counts": [
+      { "date": "2025-01-21", "critical": 2, "warning": 1, "info": 0 },
+      { "date": "2025-01-22", "critical": 1, "warning": 2, "info": 1 },
+      { "date": "2025-01-23", "critical": 3, "warning": 0, "info": 0 },
+      { "date": "2025-01-24", "critical": 1, "warning": 1, "info": 1 },
+      { "date": "2025-01-25", "critical": 2, "warning": 2, "info": 0 },
+      { "date": "2025-01-26", "critical": 1, "warning": 1, "info": 1 },
+      { "date": "2025-01-27", "critical": 2, "warning": 1, "info": 0 }
+    ],
+    "weekly_summary": {
+      "total_alerts": 25,
+      "critical_alerts": 12,
+      "warning_alerts": 8,
+      "info_alerts": 5,
+      "resolved_alerts": 18,
+      "unresolved_alerts": 7
+    }
+  },
+  "device_distribution": {
+    "device_1": { "total": 5, "critical": 3, "warning": 1, "info": 1 },
+    "device_2": { "total": 4, "critical": 2, "warning": 2, "info": 0 },
+    "device_3": { "total": 6, "critical": 4, "warning": 1, "info": 1 },
+    "device_4": { "total": 3, "critical": 1, "warning": 1, "info": 1 },
+    "device_5": { "total": 7, "critical": 2, "warning": 3, "info": 2 }
+  },
+  "alert_types": {
+    "temperature_sensor": 8,
+    "humidity_sensor": 5,
+    "power_supply": 6,
+    "cooling_system": 4,
+    "network_interface": 2
+  },
+  "resolution_times": {
+    "average_hours": 4.2,
+    "critical_average": 2.1,
+    "warning_average": 6.5,
+    "info_average": 8.0
+  }
+}

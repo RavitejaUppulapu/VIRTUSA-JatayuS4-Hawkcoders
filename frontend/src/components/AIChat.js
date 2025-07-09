@@ -1,35 +1,38 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
-  Paper,
+  Fab,
+  Drawer,
   Typography,
   TextField,
   IconButton,
+  Paper,
   List,
   ListItem,
-  Fab,
-  Drawer,
+  ListItemText,
+  Divider,
   CircularProgress,
-  Avatar,
+  Alert,
 } from "@mui/material";
 import {
+  Chat as ChatIcon,
   Send as SendIcon,
   Close as CloseIcon,
   SmartToy as BotIcon,
-  Chat as ChatIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
-import axios from "axios";
 
 const AIChat = () => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
-      type: "bot",
-      content:
-        "Hello! I'm your AI maintenance assistant. How can I help you today?",
+      id: 1,
+      text: "Hello! I'm your AI maintenance assistant. How can I help you today?",
+      sender: "bot",
+      timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -41,35 +44,50 @@ const AIChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
 
     const userMessage = {
-      type: "user",
-      content: input,
+      id: Date.now(),
+      text: inputValue,
+      sender: "user",
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    setInputValue("");
     setLoading(true);
 
     try {
-      // Replace with your actual AI endpoint
-      const response = await axios.post("http://localhost:8000/ai-chat", {
-        message: input,
+      const response = await fetch("http://localhost:8000/ai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: inputValue }),
       });
 
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+      
       const botMessage = {
-        type: "bot",
-        content: response.data.response,
+        id: Date.now() + 1,
+        text: data.response || "I'm sorry, I couldn't process your request. Please try again.",
+        sender: "bot",
+        timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
-        type: "bot",
-        content: "I apologize, but I encountered an error. Please try again.",
+        id: Date.now() + 1,
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        sender: "bot",
+        timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -77,23 +95,30 @@ const AIChat = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
     }
+  };
+
+  const formatTime = (timestamp) => {
+    return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
     <>
       <Fab
         color="primary"
+        aria-label="AI Chat"
+        onClick={() => setOpen(true)}
         sx={{
           position: "fixed",
           bottom: 16,
           right: 16,
+          zIndex: 1000,
         }}
-        onClick={() => setOpen(true)}
+        data-testid="ai-chat-fab"
       >
         <ChatIcon />
       </Fab>
@@ -103,128 +128,131 @@ const AIChat = () => {
         open={open}
         onClose={() => setOpen(false)}
         PaperProps={{
-          sx: { width: { xs: "100%", sm: 400 } },
+          sx: {
+            width: { xs: "100%", sm: 400 },
+            height: "100%",
+          },
         }}
+        data-testid="ai-chat-drawer"
       >
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
           {/* Header */}
-          <Paper
-            elevation={2}
+          <Box
             sx={{
               p: 2,
+              bgcolor: "primary.main",
+              color: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              borderRadius: 0,
             }}
           >
-            <Box display="flex" alignItems="center" gap={1}>
-              <BotIcon color="primary" />
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <BotIcon sx={{ mr: 1 }} />
               <Typography variant="h6">AI Maintenance Assistant</Typography>
             </Box>
-            <IconButton onClick={() => setOpen(false)}>
+            <IconButton
+              color="inherit"
+              onClick={() => setOpen(false)}
+              data-testid="close-chat-button"
+            >
               <CloseIcon />
             </IconButton>
-          </Paper>
+          </Box>
 
           {/* Messages */}
           <Box
             sx={{
               flex: 1,
-              overflowY: "auto",
+              overflow: "auto",
               p: 2,
               bgcolor: "grey.50",
             }}
+            data-testid="chat-messages"
           >
-            <List>
-              {messages.map((message, index) => (
+            <List sx={{ p: 0 }}>
+              {messages.map((message) => (
                 <ListItem
-                  key={index}
+                  key={message.id}
                   sx={{
+                    display: "flex",
                     flexDirection: "column",
-                    alignItems:
-                      message.type === "user" ? "flex-end" : "flex-start",
-                    p: 1,
+                    alignItems: message.sender === "user" ? "flex-end" : "flex-start",
+                    p: 0,
+                    mb: 2,
                   }}
                 >
-                  <Box
+                  <Paper
                     sx={{
-                      display: "flex",
-                      gap: 1,
+                      p: 2,
                       maxWidth: "80%",
-                      alignItems: "flex-start",
+                      bgcolor: message.sender === "user" ? "primary.main" : "white",
+                      color: message.sender === "user" ? "white" : "text.primary",
+                      boxShadow: 1,
                     }}
                   >
-                    {message.type === "bot" && (
-                      <Avatar sx={{ bgcolor: "primary.main" }}>
-                        <BotIcon />
-                      </Avatar>
-                    )}
-                    <Paper
-                      sx={{
-                        p: 2,
-                        bgcolor:
-                          message.type === "user"
-                            ? "primary.main"
-                            : "background.paper",
-                        color:
-                          message.type === "user" ? "white" : "text.primary",
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {Array.isArray(message.content.split("\n")) && message.content.includes("\n")
-                          ? message.content.split("\n").map((line, idx) => (
-                              <span key={idx}>{line}<br /></span>
-                            ))
-                          : message.content}
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                      {message.sender === "user" ? (
+                        <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
+                      ) : (
+                        <BotIcon sx={{ mr: 1, fontSize: 20 }} />
+                      )}
+                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                        {message.sender === "user" ? "You" : "AI Assistant"}
                       </Typography>
-                    </Paper>
-                  </Box>
+                    </Box>
+                    <ListItemText
+                      primary={message.text}
+                      sx={{ m: 0 }}
+                    />
+                    <Typography variant="caption" sx={{ opacity: 0.7, mt: 1, display: "block" }}>
+                      {formatTime(message.timestamp)}
+                    </Typography>
+                  </Paper>
                 </ListItem>
               ))}
-              <div ref={messagesEndRef} />
+              {loading && (
+                <ListItem sx={{ justifyContent: "flex-start", p: 0, mb: 2 }}>
+                  <Paper sx={{ p: 2, bgcolor: "white", boxShadow: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <BotIcon sx={{ mr: 1, fontSize: 20 }} />
+                      <CircularProgress size={20} />
+                    </Box>
+                  </Paper>
+                </ListItem>
+              )}
             </List>
-            {loading && (
-              <Box display="flex" justifyContent="center" p={2}>
-                <CircularProgress size={24} />
-              </Box>
-            )}
+            <div ref={messagesEndRef} />
           </Box>
 
+          <Divider />
+
           {/* Input */}
-          <Paper
-            elevation={2}
-            sx={{
-              p: 2,
-              borderRadius: 0,
-            }}
-          >
-            <Box display="flex" gap={1}>
+          <Box sx={{ p: 2, bgcolor: "white" }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <TextField
                 fullWidth
-                multiline
-                maxRows={4}
-                placeholder="Type your message..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
                 variant="outlined"
-                size="small"
+                placeholder="Type your message..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={loading}
                 data-testid="ai-chat-input"
+                sx={{ mr: 1 }}
               />
               <IconButton
                 color="primary"
-                onClick={handleSend}
-                disabled={!input.trim() || loading}
+                onClick={handleSendMessage}
+                disabled={!inputValue.trim() || loading}
               >
                 <SendIcon />
               </IconButton>
             </Box>
-          </Paper>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+              Press Enter to send, Shift+Enter for new line
+            </Typography>
+          </Box>
         </Box>
       </Drawer>
     </>

@@ -1,0 +1,21 @@
+{
+  "total_devices": 5,
+  "operational_devices": 4,
+  "warning_devices": 1,
+  "critical_devices": 0,
+  "total_alerts": 5,
+  "active_alerts": 4,
+  "resolved_alerts": 1,
+  "critical_alerts": 3,
+  "warning_alerts": 1,
+  "info_alerts": 1,
+  "predictions": 3,
+  "high_risk_predictions": 1,
+  "medium_risk_predictions": 1,
+  "critical_risk_predictions": 1,
+  "maintenance_scheduled": 2,
+  "maintenance_completed": 1,
+  "uptime_percentage": 98.5,
+  "mtbf_hours": 720,
+  "mttr_hours": 4.2
+}

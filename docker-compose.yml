@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     volumes:
+      - ./backend:/app/backend
       - ./data:/app/data
       - ./models:/app/models
     ports:

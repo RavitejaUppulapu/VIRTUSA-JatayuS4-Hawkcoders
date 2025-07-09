@@ -1,0 +1,72 @@
+[
+  {
+    "id": "device_1",
+    "name": "HVAC Unit 1",
+    "location": "Building A - Floor 1",
+    "type": "HVAC",
+    "status": "operational",
+    "last_check": "2025-01-27T10:30:00",
+    "sensors": {
+      "temperature": 72.5,
+      "humidity": 45.2,
+      "pressure": 1.2,
+      "vibration": 0.8
+    }
+  },
+  {
+    "id": "device_2",
+    "name": "Power Generator 2",
+    "location": "Building B - Basement",
+    "type": "Power",
+    "status": "operational",
+    "last_check": "2025-01-27T10:25:00",
+    "sensors": {
+      "voltage": 220.5,
+      "current": 12.3,
+      "temperature": 85.2,
+      "fuel_level": 75.8
+    }
+  },
+  {
+    "id": "device_3",
+    "name": "HVAC Unit 3",
+    "location": "Building A - Floor 2",
+    "type": "HVAC",
+    "status": "warning",
+    "last_check": "2025-01-27T10:20:00",
+    "sensors": {
+      "temperature": 78.9,
+      "humidity": 52.1,
+      "pressure": 1.1,
+      "vibration": 1.2
+    }
+  },
+  {
+    "id": "device_4",
+    "name": "Network Switch 4",
+    "location": "Building C - Server Room",
+    "type": "Network",
+    "status": "operational",
+    "last_check": "2025-01-27T10:15:00",
+    "sensors": {
+      "temperature": 68.3,
+      "packet_loss": 0.1,
+      "bandwidth": 850.5,
+      "power": 2.8
+    }
+  },
+  {
+    "id": "device_5",
+    "name": "Storage Server 5",
+    "location": "Building C - Server Room",
+    "type": "Storage",
+    "status": "operational",
+    "last_check": "2025-01-27T10:10:00",
+    "sensors": {
+      "temperature": 72.1,
+      "disk_usage": 65.3,
+      "read_latency": 0.8,
+      "power": 3.2
+    }
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "11be83c4-806d-4cea-936f-b441ffb6f7f9",
+    "timestamp": "2025-07-07T08:06:44.952397",
+    "device_id": "device_3",
+    "type": "critical",
+    "severity": 8,
+    "message": "Abnormal behavior detected in power supply",
+    "acknowledged": false,
+    "device_name": "HVAC Unit 3",
+    "alert_type": "critical",
+    "resolution_notes": "",
+    "resolution_timestamp": null
+  },
+  {
+    "id": "280bcd30-3d7b-46bd-aa96-0ad0a6b43e58",
+    "timestamp": "2025-07-06T08:06:44.952397",
+    "device_id": "device_1",
+    "type": "critical",
+    "severity": 10,
+    "message": "Abnormal behavior detected in humidity sensor",
+    "acknowledged": false,
+    "device_name": "HVAC Unit 1",
+    "alert_type": "critical",
+    "resolution_notes": "",
+    "resolution_timestamp": null
+  },
+  {
+    "id": "6e44d253-1672-46ec-a1b5-b3762d178cfa",
+    "timestamp": "2025-07-07T08:06:44.952397",
+    "device_id": "device_2",
+    "type": "critical",
+    "severity": 7,
+    "message": "Abnormal behavior detected in power supply",
+    "acknowledged": false,
+    "device_name": "Power Generator 2",
+    "alert_type": "critical",
+    "resolution_notes": "",
+    "resolution_timestamp": null
+  },
+  {
+    "id": "1416e913-9f8a-4a1a-a180-e313fc9770b2",
+    "timestamp": "2025-07-03T08:06:44.952397",
+    "device_id": "device_4",
+    "type": "critical",
+    "severity": 9,
+    "message": "Abnormal behavior detected in cooling system",
+    "acknowledged": true,
+    "device_name": "Network Switch 4",
+    "alert_type": "critical",
+    "resolution_notes": "Cooling system repaired and tested",
+    "resolution_timestamp": "2025-07-03T10:30:00.000000"
+  },
+  {
+    "id": "2a7cde6d-0684-487c-a41b-6b4ef2efd11c",
+    "timestamp": "2025-07-04T08:06:44.952397",
+    "device_id": "device_5",
+    "type": "warning",
+    "severity": 6,
+    "message": "Abnormal behavior detected in temperature sensor",
+    "acknowledged": false,
+    "device_name": "Storage Server 5",
+    "alert_type": "warning",
+    "resolution_notes": "",
+    "resolution_timestamp": null
+  }
+]

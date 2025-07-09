@@ -1,0 +1,38 @@
+{
+  "device_1": [
+    {
+      "timestamp": "10:25",
+      "raw_timestamp": "2025-01-27T10:25:00",
+      "temperature": 72.3,
+      "humidity": 45.1,
+      "pressure": 1.2,
+      "vibration": 0.8
+    },
+    {
+      "timestamp": "10:30",
+      "raw_timestamp": "2025-01-27T10:30:00",
+      "temperature": 72.5,
+      "humidity": 45.2,
+      "pressure": 1.2,
+      "vibration": 0.8
+    }
+  ],
+  "device_2": [
+    {
+      "timestamp": "10:20",
+      "raw_timestamp": "2025-01-27T10:20:00",
+      "voltage": 220.3,
+      "current": 12.1,
+      "temperature": 85.0,
+      "fuel_level": 75.5
+    },
+    {
+      "timestamp": "10:25",
+      "raw_timestamp": "2025-01-27T10:25:00",
+      "voltage": 220.5,
+      "current": 12.3,
+      "temperature": 85.2,
+      "fuel_level": 75.8
+    }
+  ]
+}

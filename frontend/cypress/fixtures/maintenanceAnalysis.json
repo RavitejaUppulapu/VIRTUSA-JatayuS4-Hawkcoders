@@ -1,0 +1,68 @@
+{
+  "maintenance_activities": [
+    {
+      "id": "maintenance_1",
+      "device_id": "device_1",
+      "device_name": "HVAC Unit 1",
+      "type": "preventive",
+      "description": "Routine filter replacement and system inspection",
+      "scheduled_date": "2025-01-15T00:00:00",
+      "completed_date": "2025-01-15T08:30:00",
+      "duration_hours": 2.5,
+      "technician": "John Smith",
+      "cost": 150.0,
+      "status": "completed"
+    },
+    {
+      "id": "maintenance_2",
+      "device_id": "device_2",
+      "device_name": "Power Generator 2",
+      "type": "corrective",
+      "description": "Fuel system repair and testing",
+      "scheduled_date": "2025-01-20T00:00:00",
+      "completed_date": "2025-01-20T14:15:00",
+      "duration_hours": 4.25,
+      "technician": "Sarah Johnson",
+      "cost": 450.0,
+      "status": "completed"
+    },
+    {
+      "id": "maintenance_3",
+      "device_id": "device_3",
+      "device_name": "HVAC Unit 3",
+      "type": "preventive",
+      "description": "Scheduled maintenance and sensor calibration",
+      "scheduled_date": "2025-02-10T00:00:00",
+      "completed_date": null,
+      "duration_hours": null,
+      "technician": null,
+      "cost": null,
+      "status": "scheduled"
+    }
+  ],
+  "cost_analysis": {
+    "total_cost": 600.0,
+    "preventive_cost": 150.0,
+    "corrective_cost": 450.0,
+    "average_cost_per_maintenance": 300.0,
+    "cost_trend": "increasing"
+  },
+  "efficiency_metrics": {
+    "total_maintenance_hours": 6.75,
+    "average_duration": 3.38,
+    "on_time_completion_rate": 100.0,
+    "first_time_fix_rate": 85.0
+  },
+  "technician_performance": {
+    "John Smith": {
+      "completed_maintenance": 1,
+      "average_duration": 2.5,
+      "customer_satisfaction": 4.8
+    },
+    "Sarah Johnson": {
+      "completed_maintenance": 1,
+      "average_duration": 4.25,
+      "customer_satisfaction": 4.6
+    }
+  }
+}
