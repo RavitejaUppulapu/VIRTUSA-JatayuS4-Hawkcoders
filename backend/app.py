@@ -17,6 +17,9 @@ from threading import Lock
 from pathlib import Path
 import openai
 from dotenv import load_dotenv
+from fastapi import HTTPException
+import requests
+import google.generativeai as genai
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -751,8 +754,21 @@ async def chat_with_ai(message: ChatMessage):
             response = "Hello! I'm your AI maintenance assistant. How can I help you today?"
             return {"response": response}
         else:
-            response = "Please enter valid input to process."
-            return {"response": response}
+            api_key ="AIzaSyBNKsEpoQI4MDqtV8Jpj44buWA12aKqSB4" # Store your Gemini API key in an environment variable
+            if not api_key:
+                return {"response": "Gemini API key not set. Please set GEMINI_API_KEY environment variable."}
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
+            system_prompt = (
+                "You are an AI assistant for an industrial predictive maintenance platform. "
+                "You help users with device health, alerts, maintenance schedules, and best practices. "
+                "Always answer in the context of predictive maintenance for industrial equipment, not personal tasks. "
+                "Keep your responses concise: reply in 1-2 sentences or 3-4 bullet points unless the user asks for more detail."
+                "\n"
+            )
+            full_prompt = system_prompt + "User: " + message.message
+            response = model.generate_content(full_prompt)
+            return {"response": response.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
