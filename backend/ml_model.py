@@ -38,9 +38,16 @@ class PredictiveMaintenanceModel:
         return sensor_data, log_data
         
     def prepare_data(self, sensor_data, log_data):
-        # Convert timestamps
-        sensor_data['timestamp'] = pd.to_datetime(sensor_data['timestamp'])
-        log_data['timestamp'] = pd.to_datetime(log_data['timestamp'])
+        # Ensure sensor_data is a DataFrame
+        if not isinstance(sensor_data, pd.DataFrame):
+            sensor_data = pd.DataFrame(sensor_data)
+        if not isinstance(log_data, pd.DataFrame):
+            log_data = pd.DataFrame(log_data)
+        if 'timestamp' not in sensor_data.columns:
+            print("sensor_data missing 'timestamp' column. Data:", sensor_data.head())
+        # Convert timestamps (specify format if known)
+        sensor_data['timestamp'] = pd.to_datetime(sensor_data['timestamp'], format="%H:%M", errors='coerce')
+        log_data['timestamp'] = pd.to_datetime(log_data['timestamp'], errors='coerce')
         
         # Sort by timestamp
         sensor_data = sensor_data.sort_values('timestamp')

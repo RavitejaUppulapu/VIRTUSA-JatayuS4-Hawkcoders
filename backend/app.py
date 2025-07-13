@@ -976,15 +976,14 @@ async def get_predictions():
                 sensor_values = []
                 for reading in recent_data:
                     if isinstance(reading, dict):
-                        # Create a clean sensor reading without timestamp
                         sensor_reading = {}
                         for key, value in reading.items():
                             if key not in ['timestamp', 'raw_timestamp']:
                                 sensor_reading[key] = value
                         sensor_values.append(sensor_reading)
                     else:
-                        # If no sensor data, use default values
                         sensor_values.append({
+                            'timestamp': datetime.now().strftime("%H:%M"),
                             'temperature': random.uniform(20, 30),
                             'humidity': random.uniform(40, 60),
                             'vibration': random.uniform(0, 5)
