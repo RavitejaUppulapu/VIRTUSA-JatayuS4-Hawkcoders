@@ -19,7 +19,8 @@ import openai
 from dotenv import load_dotenv
 from fastapi import HTTPException
 import requests
-import google.generativeai as genai
+# import google.generativeai as genai
+from openai import AsyncOpenAI
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -748,67 +749,83 @@ def send_notifications(alerts: List[dict]):
 
 @app.post("/ai-chat", summary="AI Chat", description="Interact with the AI assistant for maintenance and monitoring advice.")
 async def chat_with_ai(message: ChatMessage):
-    try:
-        msg = message.message.lower()
-        if msg in ["hi", "hello"]:
-            response = "Hello! I'm your AI maintenance assistant. How can I help you today?"
-            return {"response": response}
-        elif "critical device" in msg or "critical devices" in msg:
-            critical_devices = [d for d in devices.values() if d["status"] == "critical"]
-            if critical_devices:
-                response = "List of critical devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in critical_devices)
-            else:
-                response = "There are no devices currently in critical status."
-            return {"response": response}
-        elif (
-            "warning device" in msg or "warning devices" in msg
-        ):
-            warning_devices = [d for d in devices.values() if d["status"] == "warning"]
-            if warning_devices:
-                response = "List of warning devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in warning_devices)
-            else:
-                response = "There are no devices currently in warning status."
-            return {"response": response}
-        elif (
-            "operational device" in msg or "operational devices" in msg or
-            "working device" in msg or "working devices" in msg or
-            "devices in operation" in msg or "devices that are working" in msg
-        ):
-            operational_devices = [d for d in devices.values() if d["status"] == "operational"]
-            if operational_devices:
-                response = "List of operational devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in operational_devices)
-            else:
-                response = "There are no devices currently in operational status."
-            return {"response": response}
+    """
+    Simple rule-based AI chat endpoint. Handles only:
+    - Get all alerts
+    - Get only critical devices
+    - Get only warning devices
+    - Get only info devices
+    Returns a help message for any other query.
+    """
+    msg = message.message.strip().lower()
+    if "all alerts" in msg or ("alerts" in msg and "all" in msg) or "alerts" in msg or "alert" in msg:
+        all_alerts = load_alerts_from_disk()
+        response = f"Total alerts: {len(all_alerts)}\n"
+        for alert in all_alerts:
+            device_name = devices.get(alert.get("device_id", ""), {}).get("name", "Unknown Device")
+            response += f"- {device_name}: {alert.get('message', 'No message')} (Severity: {alert.get('severity', 0)})\n"
+        return {"response": response.strip()}
+    elif "critical devices" in msg or ("devices" in msg and "critical" in msg) or "critical" in msg or "critical alerts" in msg or ("alerts" in msg and "critical" in msg):
+        critical_devices = [d for d in devices.values() if d["status"] == "critical"]
+        if critical_devices:
+            response = "Critical devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in critical_devices)
         else:
-            # Fallback to previous keyword-based response
-            response = get_mock_ai_response(msg)
-            return {"response": response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def get_mock_ai_response(message: str) -> str:
-    # Simple keyword-based response system
-    if "temperature" in message:
-        return "High temperatures can indicate cooling system issues or overload. I recommend:\n1. Check cooling fans\n2. Verify airflow isn't blocked\n3. Monitor server load\n4. Ensure HVAC is functioning properly"
-    
-    elif "humidity" in message:
-        return "Abnormal humidity levels can damage equipment. Here's what to check:\n1. Check for water leaks\n2. Verify HVAC dehumidification\n3. Monitor condensation\n4. Consider adding humidity sensors"
-    
-    elif "vibration" in message:
-        return "Excessive vibration often indicates mechanical issues:\n1. Check for loose components\n2. Inspect fan bearings\n3. Verify equipment mounting\n4. Consider preventive maintenance"
-    
-    elif "maintenance" in message:
-        return "For maintenance best practices:\n1. Schedule regular inspections\n2. Keep detailed maintenance logs\n3. Monitor performance metrics\n4. Follow manufacturer guidelines\n5. Train staff on procedures"
-    
-    elif "alert" in message:
-        return "To manage alerts effectively:\n1. Set appropriate thresholds\n2. Prioritize critical alerts\n3. Document response procedures\n4. Maintain escalation protocols\n5. Review alert history regularly"
-    
-    elif "help" in message:
-        return "I can help you with:\n- Temperature issues\n- Humidity concerns\n- Vibration problems\n- Maintenance procedures\n- Alert management\n- Best practices\n\nJust ask about any of these topics!"
-    
+            response = "No devices currently in critical status."
+        return {"response": response}
+    elif "warning devices" in msg or ("devices" in msg and "warning" in msg) or "warning" in msg or "warning alerts" in msg or ("alerts" in msg and "warning" in msg):
+        warning_devices = [d for d in devices.values() if d["status"] == "warning"]
+        if warning_devices:
+            response = "Warning devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in warning_devices)
+        else:
+            response = "No devices currently in warning status."
+        return {"response": response}
+    elif "info devices" in msg or ("devices" in msg and "info" in msg) or "info" in msg or "info alerts" in msg or ("alerts" in msg and "info" in msg):
+        info_devices = [d for d in devices.values() if d["status"] == "operational"]
+        if info_devices:
+            response = "Info (operational) devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in info_devices)
+        else:
+            response = "No devices currently in info/operational status."
+        return {"response": response}
+    elif "help" in msg or "help me" in msg or "help me with" in msg or "hi" in msg or "hello" in msg or "hi there" in msg or "hello there" in msg:
+        return {"response": "Hi! 👋 I can assist you with the following queries:\n• Show all alerts\n• List critical devices\n• List warning devices\n• List info (operational) devices\n\nJust type your question, for example: 'Show all alerts' or 'List critical devices'."}
     else:
-        return "I'm here to help with maintenance and monitoring. You can ask about:\n- Device issues (temperature, humidity, vibration)\n- Maintenance procedures\n- Alert management\n- Best practices\n\nWhat would you like to know?"
+        # Fallback: Use OpenAI GPT for out-of-bounds questions (new API style)
+        try:
+            user_message = message.message.strip()
+            # Load only the 10 latest alerts for context, sorted by timestamp descending if possible
+            try:
+                current_alerts = load_alerts_from_disk()
+                current_alerts = sorted(
+                    current_alerts,
+                    key=lambda a: a.get('timestamp', ''),
+                    reverse=True
+                )
+            except Exception:
+                current_alerts = []
+            alerts_context = ""
+            for alert in current_alerts[:10]:
+                device_name = devices.get(alert.get("device_id", ""), {}).get("name", "Unknown Device")
+                alerts_context += f"- {device_name}: {alert.get('message', 'No message')} (Severity: {alert.get('severity', 0)}, Type: {alert.get('type', 'unknown')})\n"
+            prompt = (
+                "You are an AI maintenance assistant for a predictive maintenance system.\n\n"
+                f"{alerts_context}\n"
+                f"User question: {user_message}\n\n"
+                "Please provide a helpful, professional response based on the alerts data above. "
+                "Focus on: 1. Analyzing the current situation 2. Providing actionable recommendations "
+                "3. Explaining potential causes and solutions 4. Suggesting preventive measures\n"
+                "Keep your response concise but informative."
+            )
+            client = AsyncOpenAI(api_key=openai.api_key)
+            response = await client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.7
+            )
+            return {"response": response.choices[0].message.content.strip()}
+        except Exception as e:
+            print(f"Error in OpenAI fallback /ai-chat: {str(e)}")
+            return {"response": f"OpenAI error: {str(e)}"}
     
 
 @app.get("/failures")
@@ -976,15 +993,14 @@ async def get_predictions():
                 sensor_values = []
                 for reading in recent_data:
                     if isinstance(reading, dict):
-                        # Create a clean sensor reading without timestamp
                         sensor_reading = {}
                         for key, value in reading.items():
                             if key not in ['timestamp', 'raw_timestamp']:
                                 sensor_reading[key] = value
                         sensor_values.append(sensor_reading)
                     else:
-                        # If no sensor data, use default values
                         sensor_values.append({
+                            'timestamp': datetime.now().strftime("%H:%M"),
                             'temperature': random.uniform(20, 30),
                             'humidity': random.uniform(40, 60),
                             'vibration': random.uniform(0, 5)
