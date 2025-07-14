@@ -10,7 +10,9 @@ describe("PMBI App E2E", () => {
     });
     it("Navigates to Dashboard", () => {
       cy.get('[data-testid="MenuIcon"]').click();
+      cy.intercept("GET", "http://localhost:8000/dashboard/predictions").as("getPredictions");
       cy.contains("Dashboard").click();
+      cy.wait("@getPredictions");
       cy.url().should("eq", "http://localhost:3000/");
       cy.contains("System Overview");
     });
@@ -22,7 +24,9 @@ describe("PMBI App E2E", () => {
     });
     it("Navigates to Alerts", () => {
       cy.get('[data-testid="MenuIcon"]').click();
+      cy.intercept("GET", "http://localhost:8000/alerts").as("getAlerts");
       cy.contains("Alerts").click();
+      cy.wait("@getAlerts");
       cy.url().should("include", "/alerts");
       cy.contains("Alert Management System");
     });
