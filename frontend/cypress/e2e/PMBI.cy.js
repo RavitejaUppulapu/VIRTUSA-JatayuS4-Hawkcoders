@@ -39,6 +39,7 @@ describe("PMBI App E2E", () => {
       cy.contains("System Settings");
     });
     it("Navigates to Why Choose Us", () => {
+      cy.get('[data-testid="MenuIcon"]').click();
       cy.contains("Why Choose Us").click();
       cy.url().should("include", "/why-choose-us");
       cy.contains("Why Choose Our Predictive Maintenance Platform?");
@@ -109,7 +110,7 @@ describe("PMBI App E2E", () => {
     });
   });
   describe("Alerts - Resolve Flow", () => {
-    it.skip("resolves an active alert and verifies it in resolved alerts", function () {
+    it("resolves an active alert and verifies it in resolved alerts", function () {
       cy.visit("http://localhost:3000/alerts");
       cy.contains("Active Alerts").click();
       cy.get("body").then(($body) => {
