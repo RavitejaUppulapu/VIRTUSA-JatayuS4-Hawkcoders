@@ -1678,23 +1678,6 @@ async def get_dashboard_statistics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# @app.get("/alerts/analysis", summary="Alerts Analysis", description="Get detailed analysis of alerts data including statistics, insights, and trends.")
-# async def get_alerts_analysis():
-#     """Get detailed analysis of alerts data"""
-#     try:
-#         # Load current alerts from disk
-#         current_alerts = load_alerts_from_disk()
-        
-#         # Analyze the alerts data
-#         analysis = analyze_alerts_data(current_alerts)
-        
-#         if "error" in analysis:
-#             raise HTTPException(status_code=500, detail=analysis["error"])
-        
-#         return analysis
-        
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/reports/device-metrics", summary="Device Metrics Report", description="Get detailed device metrics for reporting, including sensor trends and health scores.")
 async def get_device_metrics():
