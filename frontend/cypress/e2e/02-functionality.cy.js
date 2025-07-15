@@ -213,8 +213,8 @@ describe("PMBI Functionality Tests", () => {
       cy.contains("AI Maintenance Assistant", { timeout: 10000 }).should(
         "be.visible"
       );
-      cy.get('input[placeholder="Type your message..."]').should("be.visible");
-      cy.get('input[placeholder="Type your message..."]').type("Hello{enter}");
+      cy.get('[data-testid="ai-chat-input"]').should("be.visible");
+      cy.get('[data-testid="ai-chat-input"]').type("Hello{enter}");
       cy.contains("I'm your AI maintenance assistant").should("be.visible");
     });
 
@@ -222,7 +222,7 @@ describe("PMBI Functionality Tests", () => {
       cy.visit("http://localhost:3000");
       cy.get("button.MuiFab-root").first().click();
       cy.contains("AI Maintenance Assistant").should("be.visible");
-      cy.get('button[aria-label="close"]').click();
+      cy.get('button svg[data-testid="CloseIcon"]').parent().click();
       cy.contains("AI Maintenance Assistant").should("not.be.visible");
     });
   });
