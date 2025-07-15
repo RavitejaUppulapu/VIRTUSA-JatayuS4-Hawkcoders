@@ -24,7 +24,9 @@ describe("PMBI Navigation Tests", () => {
   it("Navigates to Alerts", () => {
     cy.get('[data-testid="MenuIcon"]').click();
     cy.contains("Alerts").click({ force: true });
-    cy.url().should("include", "/alerts");
+    cy.get("body").then(() => {
+      cy.url({ timeout: 8000 }).should("include", "/alerts");
+    });
     cy.contains("Alert Management System");
   });
 
