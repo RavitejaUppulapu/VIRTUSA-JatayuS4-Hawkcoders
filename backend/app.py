@@ -19,8 +19,9 @@ import openai
 from dotenv import load_dotenv
 from fastapi import HTTPException
 import requests
-# import google.generativeai as genai
 from openai import AsyncOpenAI
+from google import genai
+import asyncio
 
 app = FastAPI(title="Predictive Maintenance API")
 
@@ -747,86 +748,55 @@ def send_notifications(alerts: List[dict]):
         for alert in alerts:
             print(f"Sending SMS notification for alert {alert['id']}")
 
+# Ensure Gemini API key is set (from .env or environment)
+load_dotenv()
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+if gemini_api_key:
+    os.environ["GEMINI_API_KEY"] = gemini_api_key
+# Initialize Gemini client
+client = genai.Client()
+
 @app.post("/ai-chat", summary="AI Chat", description="Interact with the AI assistant for maintenance and monitoring advice.")
 async def chat_with_ai(message: ChatMessage):
-    """
-    Simple rule-based AI chat endpoint. Handles only:
-    - Get all alerts
-    - Get only critical devices
-    - Get only warning devices
-    - Get only info devices
-    Returns a help message for any other query.
-    """
-    msg = message.message.strip().lower()
-    if "all alerts" in msg or ("alerts" in msg and "all" in msg) or "alerts" in msg or "alert" in msg:
-        all_alerts = load_alerts_from_disk()
-        response = f"Total alerts: {len(all_alerts)}\n"
-        for alert in all_alerts:
-            device_name = devices.get(alert.get("device_id", ""), {}).get("name", "Unknown Device")
-            response += f"- {device_name}: {alert.get('message', 'No message')} (Severity: {alert.get('severity', 0)})\n"
-        return {"response": response.strip()}
-    elif "critical devices" in msg or ("devices" in msg and "critical" in msg) or "critical" in msg or "critical alerts" in msg or ("alerts" in msg and "critical" in msg):
-        critical_devices = [d for d in devices.values() if d["status"] == "critical"]
-        if critical_devices:
-            response = "Critical devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in critical_devices)
-        else:
-            response = "No devices currently in critical status."
-        return {"response": response}
-    elif "warning devices" in msg or ("devices" in msg and "warning" in msg) or "warning" in msg or "warning alerts" in msg or ("alerts" in msg and "warning" in msg):
-        warning_devices = [d for d in devices.values() if d["status"] == "warning"]
-        if warning_devices:
-            response = "Warning devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in warning_devices)
-        else:
-            response = "No devices currently in warning status."
-        return {"response": response}
-    elif "info devices" in msg or ("devices" in msg and "info" in msg) or "info" in msg or "info alerts" in msg or ("alerts" in msg and "info" in msg):
-        info_devices = [d for d in devices.values() if d["status"] == "operational"]
-        if info_devices:
-            response = "Info (operational) devices:\n" + "\n".join(f"- {d['name']} (ID: {d['id']}, Location: {d['location']})" for d in info_devices)
-        else:
-            response = "No devices currently in info/operational status."
-        return {"response": response}
-    elif "help" in msg or "help me" in msg or "help me with" in msg or "hi" in msg or "hello" in msg or "hi there" in msg or "hello there" in msg:
+    user_message = message.message.strip()
+    msg = user_message.lower()
+    # Load alerts context
+    try:
+        with open("alerts.json", "r") as f:
+            alerts_data = json.load(f)
+    except Exception:
+        alerts_data = []
+    alerts_context = "\n".join(
+        f"- {a.get('device_id', 'Unknown')}: {a.get('message', '')} (Severity: {a.get('severity', 0)})"
+        for a in alerts_data[:10]
+    )
+    # Only handle help/greeting directly; all other queries (including alerts) use Gemini
+    if "help" in msg or "help me" in msg or "help me with" in msg or "hi" in msg or "hello" in msg or "hi there" in msg or "hello there" in msg:
         return {"response": "Hi! 👋 I can assist you with the following queries:\n• Show all alerts\n• List critical devices\n• List warning devices\n• List info (operational) devices\n\nJust type your question, for example: 'Show all alerts' or 'List critical devices'."}
-    else:
-        # Fallback: Use OpenAI GPT for out-of-bounds questions (new API style)
-        try:
-            user_message = message.message.strip()
-            # Load only the 10 latest alerts for context, sorted by timestamp descending if possible
-            try:
-                current_alerts = load_alerts_from_disk()
-                current_alerts = sorted(
-                    current_alerts,
-                    key=lambda a: a.get('timestamp', ''),
-                    reverse=True
-                )
-            except Exception:
-                current_alerts = []
-            alerts_context = ""
-            for alert in current_alerts[:10]:
-                device_name = devices.get(alert.get("device_id", ""), {}).get("name", "Unknown Device")
-                alerts_context += f"- {device_name}: {alert.get('message', 'No message')} (Severity: {alert.get('severity', 0)}, Type: {alert.get('type', 'unknown')})\n"
-            prompt = (
-                "You are an AI maintenance assistant for a predictive maintenance system.\n\n"
-                f"{alerts_context}\n"
-                f"User question: {user_message}\n\n"
-                "Please provide a helpful, professional response based on the alerts data above. "
-                "Focus on: 1. Analyzing the current situation 2. Providing actionable recommendations "
-                "3. Explaining potential causes and solutions 4. Suggesting preventive measures\n"
-                "Keep your response concise but informative."
-            )
-            client = AsyncOpenAI(api_key=openai.api_key)
-            response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.7
-            )
-            return {"response": response.choices[0].message.content.strip()}
-        except Exception as e:
-            print(f"Error in OpenAI fallback /ai-chat: {str(e)}")
-            return {"response": f"OpenAI error: {str(e)}"}
-    
+    # Otherwise, use Gemini generative model for all alert-related and open-ended queries
+    prompt = (
+        "You are an intelligent assistant specialized in predictive maintenance for banking infrastructure (PMBI).\n"
+        "Your role is to interpret system-generated alerts and provide precise, actionable recommendations.\n\n"
+        "System Context:\n"
+        f"{alerts_context}\n\n"
+        "User Query:\n"
+        f"{user_message}\n\n"
+        "Instructions:\n"
+        "- Analyze the alerts above and the user’s query.\n"
+        "- Focus on identifying the most critical issues first.\n"
+        "- Keep your response shorter as possible, clear, and solution-oriented.\n"
+        "- Avoid unnecessary technical jargon unless requested.\n"
+        "- If additional investigation is required, mention it briefly.\n\n"
+        "Response:"
+    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",  # or "gemini-1.5-pro-latest" if preferred
+            contents=prompt
+        )
+        return {"response": response.text.strip()}
+    except Exception as e:
+        return {"response": "Gemini AI error: " + str(e)}
 
 @app.get("/failures")
 async def get_failures(type: Optional[str] = None):

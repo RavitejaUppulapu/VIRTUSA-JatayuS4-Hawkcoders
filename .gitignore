@@ -85,3 +85,5 @@ coverage.xml
 # Operating System
 .DS_Store
 Thumbs.db 
+
+/backend/venv-gem-chatbot/
