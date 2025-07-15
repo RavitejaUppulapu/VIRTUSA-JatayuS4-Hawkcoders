@@ -15,4 +15,4 @@ python-dotenv
 python-dateutil
 dotenv
 pytest
-google.generativeai
+google-genai
