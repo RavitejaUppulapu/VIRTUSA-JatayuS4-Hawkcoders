@@ -1,9 +1,11 @@
 import pytest
 import pandas as pd
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from unittest.mock import patch
 from backend.ml_model import PredictiveMaintenanceModel
 import numpy as np
-import os
 import tensorflow as tf
 import joblib
 
