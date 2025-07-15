@@ -59,9 +59,21 @@ const AIChat = () => {
         message: input,
       });
 
+      let botContent = response.data.response;
+      console.log(botContent);
+      // Remove all asterisks from the response
+      if (botContent) {
+        botContent = botContent.replace(/\*/g, "");
+      }
+      // Check for Gemini error in the response and show a user-friendly message
+      if (botContent && botContent.startsWith("Gemini AI error:")) {
+        botContent =
+          "Sorry, the AI assistant is currently unavailable. Please try again later or contact your administrator to check the Gemini API setup.";
+      }
+
       const botMessage = {
         type: "bot",
-        content: response.data.response,
+        content: botContent,
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -141,22 +153,24 @@ const AIChat = () => {
                 <ListItem
                   key={index}
                   sx={{
-                    flexDirection: "column",
-                    alignItems:
-                      message.type === "user" ? "flex-end" : "flex-start",
-                    p: 1,
+                    flexDirection: message.type === "user" ? "row-reverse" : "row",
+                    alignItems: "flex-end",
+                    border: "none",
+                    background: "none",
+                    px: 0,
+                    py: 1.5,
                   }}
                 >
                   <Box
                     sx={{
                       display: "flex",
+                      alignItems: "flex-end",
                       gap: 1,
                       maxWidth: "80%",
-                      alignItems: "flex-start",
                     }}
                   >
                     {message.type === "bot" && (
-                      <Avatar sx={{ bgcolor: "primary.main" }}>
+                      <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
                         <BotIcon />
                       </Avatar>
                     )}
@@ -169,20 +183,35 @@ const AIChat = () => {
                             : "background.paper",
                         color:
                           message.type === "user" ? "white" : "text.primary",
-                        borderRadius: 2,
+                        borderRadius: 3,
+                        fontSize: "1rem",
+                        fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif",
+                        boxShadow: 2,
+                        maxWidth: 500,
+                        minWidth: 60,
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                        lineHeight: 1.7,
                       }}
                     >
                       <Typography
                         variant="body1"
-                        sx={{ whiteSpace: "pre-wrap" }}
+                        sx={{
+                          fontSize: "1rem",
+                          fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif",
+                          wordBreak: "break-word",
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.7,
+                        }}
                       >
-                        {Array.isArray(message.content.split("\n")) && message.content.includes("\n")
-                          ? message.content.split("\n").map((line, idx) => (
-                              <span key={idx}>{line}<br /></span>
-                            ))
-                          : message.content}
+                        {message.content}
                       </Typography>
                     </Paper>
+                    {message.type === "user" && (
+                      <Avatar sx={{ bgcolor: "grey.400", color: "black", width: 36, height: 36 }}>
+                        <ChatIcon />
+                      </Avatar>
+                    )}
                   </Box>
                 </ListItem>
               ))}
