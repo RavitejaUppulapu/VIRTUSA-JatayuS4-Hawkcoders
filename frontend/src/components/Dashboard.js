@@ -156,13 +156,18 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [predictionsResponse, alertsResponse, devicesResponse] = await Promise.all([
-        fetch("http://localhost:8000/dashboard/predictions"),
-        fetch("http://localhost:8000/alerts"),
-        fetch("http://localhost:8000/devices")
-      ]);
+      const [predictionsResponse, alertsResponse, devicesResponse] =
+        await Promise.all([
+          fetch("http://localhost:8000/dashboard/predictions"),
+          fetch("http://localhost:8000/alerts"),
+          fetch("http://localhost:8000/devices"),
+        ]);
 
-      if (!predictionsResponse.ok || !alertsResponse.ok || !devicesResponse.ok) {
+      if (
+        !predictionsResponse.ok ||
+        !alertsResponse.ok ||
+        !devicesResponse.ok
+      ) {
         throw new Error("Failed to fetch data");
       }
 
@@ -171,21 +176,31 @@ const Dashboard = () => {
       const devicesData = await devicesResponse.json();
 
       // Process alerts with improved error handling
-      const processedAlerts = alertsData.map(alert => {
-        try {
-          return {
-            ...alert,
-            timestamp: new Date(alert.timestamp),
-            device_name: devicesData.find(device => device.id === alert.device_id)?.name || "Unknown Device",
-            severity: alert.severity || 5,
-            alert_type: alert.alert_type || (alert.severity >= 7 ? "critical" : alert.severity >= 4 ? "warning" : "info"),
-            acknowledged: alert.acknowledged || false
-          };
-        } catch (error) {
-          console.error("Error processing alert:", error, alert);
-          return null;
-        }
-      }).filter(alert => alert !== null);
+      const processedAlerts = alertsData
+        .map((alert) => {
+          try {
+            return {
+              ...alert,
+              timestamp: new Date(alert.timestamp),
+              device_name:
+                devicesData.find((device) => device.id === alert.device_id)
+                  ?.name || "Unknown Device",
+              severity: alert.severity || 5,
+              alert_type:
+                alert.alert_type ||
+                (alert.severity >= 7
+                  ? "critical"
+                  : alert.severity >= 4
+                  ? "warning"
+                  : "info"),
+              acknowledged: alert.acknowledged || false,
+            };
+          } catch (error) {
+            console.error("Error processing alert:", error, alert);
+            return null;
+          }
+        })
+        .filter((alert) => alert !== null);
 
       setPredictedFailures(predictionsData);
       setAlerts(processedAlerts);
@@ -207,14 +222,15 @@ const Dashboard = () => {
   const updateStatistics = (predictions, alerts) => {
     const stats = {
       totalPredictions: predictions.length,
-      criticalIssues: predictions.filter(p => p.risk_level === "high").length,
-      mediumIssues: predictions.filter(p => p.risk_level === "medium").length,
-      lowIssues: predictions.filter(p => p.risk_level === "low").length,
+      criticalIssues: predictions.filter((p) => p.risk_level === "high").length,
+      mediumIssues: predictions.filter((p) => p.risk_level === "medium").length,
+      lowIssues: predictions.filter((p) => p.risk_level === "low").length,
       totalAlerts: alerts.length,
-      criticalAlerts: alerts.filter(a => a.severity >= 7).length,
-      warningAlerts: alerts.filter(a => a.severity >= 4 && a.severity < 7).length,
-      infoAlerts: alerts.filter(a => a.severity < 4).length,
-      resolvedAlerts: alerts.filter(a => a.acknowledged).length
+      criticalAlerts: alerts.filter((a) => a.severity >= 7).length,
+      warningAlerts: alerts.filter((a) => a.severity >= 4 && a.severity < 7)
+        .length,
+      infoAlerts: alerts.filter((a) => a.severity < 4).length,
+      resolvedAlerts: alerts.filter((a) => a.acknowledged).length,
     };
     setStatistics(stats);
   };
@@ -292,17 +308,21 @@ const Dashboard = () => {
     const fetchAnalysis = async () => {
       if (!alerts || alerts.length === 0) return;
       const newAnalysisData = {};
-      await Promise.all(alerts.map(async (alert) => {
-        try {
-          const response = await fetch(`http://localhost:8000/predictions/analysis/${alert.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            newAnalysisData[alert.id] = data;
+      await Promise.all(
+        alerts.map(async (alert) => {
+          try {
+            const response = await fetch(
+              `http://localhost:8000/predictions/analysis/${alert.id}`
+            );
+            if (response.ok) {
+              const data = await response.json();
+              newAnalysisData[alert.id] = data;
+            }
+          } catch (e) {
+            // Ignore errors for now
           }
-        } catch (e) {
-          // Ignore errors for now
-        }
-      }));
+        })
+      );
       setAnalysisData(newAnalysisData);
     };
     fetchAnalysis();
@@ -1132,10 +1152,10 @@ const Dashboard = () => {
                 <React.Fragment key={alert.id}>
                   <TableRow>
                     <TableCell>
-                <Chip
+                      <Chip
                         label={getSeverityLabel(alert.severity)}
                         color={getSeverityColor(alert.severity)}
-                  size="small"
+                        size="small"
                         sx={{
                           fontWeight: "bold",
                           bgcolor:
@@ -1176,9 +1196,9 @@ const Dashboard = () => {
                     <TableRow>
                       <TableCell colSpan={6}>
                         <Box sx={{ p: 2, bgcolor: "background.paper" }}>
-            <Typography variant="subtitle1" gutterBottom>
+                          <Typography variant="subtitle1" gutterBottom>
                             Maintenance Plan
-            </Typography>
+                          </Typography>
                           <List>
                             {maintenancePlans[alert.id].steps.map(
                               (step, index) => (
@@ -1197,19 +1217,19 @@ const Dashboard = () => {
                             sx={{ mt: 2 }}
                           >
                             Preventative Measures
-            </Typography>
+                          </Typography>
                           <List>
                             {maintenancePlans[
                               alert.id
                             ].preventative_measures.map((measure, index) => (
-                <ListItem key={index}>
-                  <ListItemIcon>
+                              <ListItem key={index}>
+                                <ListItemIcon>
                                   <CircleIcon sx={{ fontSize: 8 }} />
-                  </ListItemIcon>
+                                </ListItemIcon>
                                 <ListItemText primary={measure} />
-                </ListItem>
-              ))}
-            </List>
+                              </ListItem>
+                            ))}
+                          </List>
                           <Box sx={{ mt: 2 }}>
                             <Typography variant="body2">
                               Estimated Time:{" "}
@@ -1393,13 +1413,13 @@ const Dashboard = () => {
                 <Box
                   sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
                 >
-            <Button
+                  <Button
                     onClick={() => setShowDetailsDialog(false)}
-              variant="contained"
-              color="primary"
-            >
+                    variant="contained"
+                    color="primary"
+                  >
                     Close
-            </Button>
+                  </Button>
                 </Box>
               </DialogContent>
             </>
@@ -1490,7 +1510,7 @@ const Dashboard = () => {
                 ? "warning"
                 : "info";
 
-    return (
+            return (
               <TableRow key={alert.id}>
                 <TableCell>
                   <Chip
@@ -1541,10 +1561,10 @@ const Dashboard = () => {
 
   const renderPredictions = () => (
     <Box>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
               <TableCell>
                 <TableSortLabel
                   active={orderBy === "severity"}
@@ -1581,15 +1601,15 @@ const Dashboard = () => {
                   Message
                 </TableSortLabel>
               </TableCell>
-            <TableCell>Status</TableCell>
+              <TableCell>Status</TableCell>
               <TableCell>Predicted Failure Date</TableCell>
               <TableCell>Days Remaining</TableCell>
               <TableCell>Causes</TableCell>
               <TableCell>Root Cause</TableCell>
               <TableCell>Resource Requirements</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {sortAlerts(alerts).map((alert) => {
               const severityNum = getSeverityNumber(alert.severity);
               const severityLabel = getSeverityLabel(alert.severity);
@@ -1604,21 +1624,21 @@ const Dashboard = () => {
               const isResolved = alert.acknowledged || alert.resolved;
 
               return (
-            <TableRow
-              key={alert.id}
+                <TableRow
+                  key={alert.id}
                   id={`alert-${alert.id}`}
-              sx={{
+                  sx={{
                     backgroundColor: isResolved
                       ? "rgba(0, 0, 0, 0.04)"
                       : `${severityColor}.lighter`,
                     opacity: isResolved ? 0.7 : 1,
-              }}
-            >
-              <TableCell>
-                <Chip
+                  }}
+                >
+                  <TableCell>
+                    <Chip
                       label={severityLabel}
                       color={severityColor}
-                  size="small"
+                      size="small"
                       sx={{
                         fontWeight: "bold",
                         bgcolor:
@@ -1629,22 +1649,20 @@ const Dashboard = () => {
                             : "#0288d1",
                         color: "white",
                       }}
-                />
-              </TableCell>
-              <TableCell>
-                    {formatPredictionTime(alert.timestamp)}
-              </TableCell>
+                    />
+                  </TableCell>
+                  <TableCell>{formatPredictionTime(alert.timestamp)}</TableCell>
                   <TableCell>{alert.device_name || "Unknown Device"}</TableCell>
                   <TableCell>{alert.message || "No message"}</TableCell>
-              <TableCell>
-                <Chip
+                  <TableCell>
+                    <Chip
                       label={isResolved ? "RESOLVED" : "UNRESOLVED"}
                       color={isResolved ? "success" : "warning"}
-                  size="small"
+                      size="small"
                       sx={{ fontWeight: "bold" }}
-                />
-              </TableCell>
-              <TableCell>
+                    />
+                  </TableCell>
+                  <TableCell>
                     {analysis
                       ? formatPredictionTime(analysis.predicted_failure_date)
                       : "Loading..."}
@@ -1698,26 +1716,26 @@ const Dashboard = () => {
                     ) : (
                       "Loading..."
                     )}
-              </TableCell>
-            </TableRow>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          {alerts.length === 0 && (
-            <TableRow>
+            {alerts.length === 0 && (
+              <TableRow>
                 <TableCell colSpan={10} align="center">
-                <Typography
-                  variant="body2"
-                  color="textSecondary"
-                  sx={{ py: 2 }}
-                >
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ py: 2 }}
+                  >
                     No predictions to display
-                </Typography>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Box>
   );
 
@@ -1843,15 +1861,15 @@ const Dashboard = () => {
         <Box>
           <Typography variant="h6" gutterBottom>
             Active Alerts and Issues
-      </Typography>
+          </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <Paper sx={{ p: 2, mb: 3 }}>{renderAlerts()}</Paper>
-          </Grid>
+            </Grid>
             <Grid item xs={12}>
               <Paper sx={{ p: 2 }}>
                 <Box
-              sx={{
+                  sx={{
                     display: "flex",
                     justifyContent: "space-between",
                     mb: 2,
@@ -1872,8 +1890,8 @@ const Dashboard = () => {
                   </Button>
                 </Box>
                 {renderEnvironmentalIssues()}
-            </Paper>
-          </Grid>
+              </Paper>
+            </Grid>
           </Grid>
         </Box>
       )}
@@ -1917,7 +1935,10 @@ const Dashboard = () => {
                     </TableHead>
                     <TableBody>
                       {[...alerts, ...environmentalAlerts]
-                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .sort(
+                          (a, b) =>
+                            new Date(b.timestamp) - new Date(a.timestamp)
+                        )
                         .slice(0, 5)
                         .map((item) => (
                           <TableRow key={item.id}>
@@ -1935,11 +1956,17 @@ const Dashboard = () => {
                                 size="small"
                               />
                             </TableCell>
-                            <TableCell>{item.message || item.description}</TableCell>
+                            <TableCell>
+                              {item.message || item.description}
+                            </TableCell>
                             <TableCell>
                               <Chip
-                                label={item.acknowledged ? "Resolved" : "Active"}
-                                color={item.acknowledged ? "success" : "warning"}
+                                label={
+                                  item.acknowledged ? "Resolved" : "Active"
+                                }
+                                color={
+                                  item.acknowledged ? "success" : "warning"
+                                }
                                 size="small"
                               />
                             </TableCell>
@@ -1949,7 +1976,7 @@ const Dashboard = () => {
                   </Table>
                 </TableContainer>
               </Paper>
-      </Grid>
+            </Grid>
 
             {/* Alert Statistics - Now Second */}
             <Grid item xs={12}>
@@ -1958,49 +1985,91 @@ const Dashboard = () => {
                   Alert Statistics
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={6} md={2}>
+                    <Card sx={{ bgcolor: "#e3f2fd" }}>
+                      <CardContent>
+                        <Typography variant="h6" color="info.dark">
+                          Active Alerts
+                        </Typography>
+                        <Typography
+                          variant="h4"
+                          data-testid="active-alerts-count"
+                        >
+                          {alerts.filter((a) => !a.acknowledged).length}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={2}>
                     <Card sx={{ bgcolor: "#ffebee" }}>
                       <CardContent>
                         <Typography variant="h6" color="error">
                           Critical Alerts
                         </Typography>
-                        <Typography variant="h4">
-                          {alerts.filter((a) => !a.acknowledged && a.severity >= 7).length}
+                        <Typography
+                          variant="h4"
+                          data-testid="critical-alerts-count"
+                        >
+                          {
+                            alerts.filter(
+                              (a) => !a.acknowledged && a.severity >= 7
+                            ).length
+                          }
                         </Typography>
                       </CardContent>
                     </Card>
-            </Grid>
-                  <Grid item xs={12} sm={3}>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={2}>
                     <Card sx={{ bgcolor: "#fff3e0" }}>
                       <CardContent>
                         <Typography variant="h6" color="warning.dark">
                           Warning Alerts
                         </Typography>
-                        <Typography variant="h4">
-                          {alerts.filter((a) => !a.acknowledged && a.severity >= 4 && a.severity < 7).length}
+                        <Typography
+                          variant="h4"
+                          data-testid="warning-alerts-count"
+                        >
+                          {
+                            alerts.filter(
+                              (a) =>
+                                !a.acknowledged &&
+                                a.severity >= 4 &&
+                                a.severity < 7
+                            ).length
+                          }
                         </Typography>
                       </CardContent>
                     </Card>
-          </Grid>
-                  <Grid item xs={12} sm={3}>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={2}>
                     <Card sx={{ bgcolor: "#e3f2fd" }}>
                       <CardContent>
                         <Typography variant="h6" color="info.dark">
                           Info Alerts
                         </Typography>
-                        <Typography variant="h4">
-                          {alerts.filter((a) => !a.acknowledged && a.severity < 4).length}
+                        <Typography
+                          variant="h4"
+                          data-testid="info-alerts-count"
+                        >
+                          {
+                            alerts.filter(
+                              (a) => !a.acknowledged && a.severity < 4
+                            ).length
+                          }
                         </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
-                  <Grid item xs={12} sm={3}>
+                  <Grid item xs={12} sm={6} md={2}>
                     <Card sx={{ bgcolor: "#e8f5e9" }}>
                       <CardContent>
                         <Typography variant="h6" color="success.dark">
                           Resolved Alerts
                         </Typography>
-                        <Typography variant="h4">
+                        <Typography
+                          variant="h4"
+                          data-testid="resolved-alerts-count"
+                        >
                           {alerts.filter((a) => a.acknowledged).length}
                         </Typography>
                       </CardContent>
@@ -2069,19 +2138,24 @@ const Dashboard = () => {
                     </TableHead>
                     <TableBody>
                       {alerts
-                        .filter((alert) => !alert.acknowledged && !alert.resolved)
-                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .filter(
+                          (alert) => !alert.acknowledged && !alert.resolved
+                        )
+                        .sort(
+                          (a, b) =>
+                            new Date(b.timestamp) - new Date(a.timestamp)
+                        )
                         .slice(0, 5)
                         .map((alert) => (
-                          <TableRow 
+                          <TableRow
                             key={alert.id}
                             sx={{
-                              backgroundColor: 
+                              backgroundColor:
                                 getSeverityNumber(alert.severity) >= 7
                                   ? "error.lighter"
                                   : getSeverityNumber(alert.severity) >= 4
                                   ? "warning.lighter"
-                                  : "info.lighter"
+                                  : "info.lighter",
                             }}
                           >
                             <TableCell>
@@ -2103,7 +2177,8 @@ const Dashboard = () => {
                             </TableCell>
                             <TableCell>
                               <Typography variant="body2" fontWeight="medium">
-                                {alert.device_name || getDeviceName(alert.device_id, devices)}
+                                {alert.device_name ||
+                                  getDeviceName(alert.device_id, devices)}
                               </Typography>
                             </TableCell>
                             <TableCell>
@@ -2112,16 +2187,25 @@ const Dashboard = () => {
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {new Date(alert.timestamp).toLocaleString()}
                               </Typography>
                             </TableCell>
                           </TableRow>
                         ))}
-                      {alerts.filter((alert) => !alert.acknowledged && !alert.resolved).length === 0 && (
+                      {alerts.filter(
+                        (alert) => !alert.acknowledged && !alert.resolved
+                      ).length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} align="center">
-                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ py: 2 }}
+                            >
                               No active alerts at the moment
                             </Typography>
                           </TableCell>
@@ -2146,12 +2230,12 @@ const Dashboard = () => {
         {selectedFailure && (
           <>
             <DialogContent>
-      <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 Alert Details
-      </Typography>
+              </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-      <Paper sx={{ p: 2 }}>
+                  <Paper sx={{ p: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       Device Information
                     </Typography>
@@ -2230,7 +2314,7 @@ const Dashboard = () => {
                           )
                         )}
                       </List>
-      </Paper>
+                    </Paper>
                   </Grid>
                 )}
               </Grid>
