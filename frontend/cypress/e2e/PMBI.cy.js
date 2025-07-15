@@ -10,7 +10,9 @@ describe("PMBI App E2E", () => {
     });
     it("Navigates to Dashboard", () => {
       cy.get('[data-testid="MenuIcon"]').click();
+      cy.intercept("GET", "http://localhost:8000/dashboard/predictions").as("getPredictions");
       cy.contains("Dashboard").click();
+      cy.wait("@getPredictions");
       cy.url().should("eq", "http://localhost:3000/");
       cy.contains("System Overview");
     });
@@ -22,7 +24,9 @@ describe("PMBI App E2E", () => {
     });
     it("Navigates to Alerts", () => {
       cy.get('[data-testid="MenuIcon"]').click();
+      cy.intercept("GET", "http://localhost:8000/alerts").as("getAlerts");
       cy.contains("Alerts").click();
+      cy.wait("@getAlerts");
       cy.url().should("include", "/alerts");
       cy.contains("Alert Management System");
     });
@@ -39,6 +43,7 @@ describe("PMBI App E2E", () => {
       cy.contains("System Settings");
     });
     it("Navigates to Why Choose Us", () => {
+      cy.get('[data-testid="MenuIcon"]').click();
       cy.contains("Why Choose Us").click();
       cy.url().should("include", "/why-choose-us");
       cy.contains("Why Choose Our Predictive Maintenance Platform?");
@@ -109,7 +114,7 @@ describe("PMBI App E2E", () => {
     });
   });
   describe("Alerts - Resolve Flow", () => {
-    it.skip("resolves an active alert and verifies it in resolved alerts", function () {
+    it("resolves an active alert and verifies it in resolved alerts", function () {
       cy.visit("http://localhost:3000/alerts");
       cy.contains("Active Alerts").click();
       cy.get("body").then(($body) => {
