@@ -21,7 +21,9 @@ describe("PMBI Alert Resolution Tests", () => {
         });
 
       // Intercept the API call before triggering it
-      cy.intercept("POST", "http://localhost:8000/alerts/*/acknowledge").as(
+      const API_BASE_URL =
+        Cypress.env("API_BASE_URL") || "http://localhost:8000";
+      cy.intercept("POST", `${API_BASE_URL}/alerts/*/acknowledge`).as(
         "acknowledgeAlert"
       );
 

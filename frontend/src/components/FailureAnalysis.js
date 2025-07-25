@@ -50,17 +50,19 @@ const FailureAnalysis = () => {
   const [stats, setStats] = useState(null);
   const [timeline, setTimeline] = useState([]);
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [failuresRes, statsRes, timelineRes] = await Promise.all([
         axios.get(
-          `http://localhost:8000/failures?type=${
+          `${API_BASE_URL}/failures?type=${
             tabValue === 0 ? "hardware" : "software"
           }`
         ),
-        axios.get("http://localhost:8000/failure-stats"),
-        axios.get("http://localhost:8000/failure-timeline"),
+        axios.get(`${API_BASE_URL}/failure-stats`),
+        axios.get(`${API_BASE_URL}/failure-timeline`),
       ]);
 
       setFailures(failuresRes.data);
@@ -75,7 +77,7 @@ const FailureAnalysis = () => {
     } finally {
       setLoading(false);
     }
-  }, [tabValue]);
+  }, [tabValue, API_BASE_URL]);
 
   useEffect(() => {
     fetchData();

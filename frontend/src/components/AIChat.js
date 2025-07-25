@@ -54,8 +54,9 @@ const AIChat = () => {
     setLoading(true);
 
     try {
-      // Replace with your actual AI endpoint
-      const response = await axios.post("http://localhost:8000/ai-chat", {
+      const API_BASE_URL =
+        process.env.REACT_APP_API_URL || "http://localhost:8000";
+      const response = await axios.post(`${API_BASE_URL}/ai-chat`, {
         message: input,
       });
 
@@ -153,7 +154,8 @@ const AIChat = () => {
                 <ListItem
                   key={index}
                   sx={{
-                    flexDirection: message.type === "user" ? "row-reverse" : "row",
+                    flexDirection:
+                      message.type === "user" ? "row-reverse" : "row",
                     alignItems: "flex-end",
                     border: "none",
                     background: "none",
@@ -170,7 +172,9 @@ const AIChat = () => {
                     }}
                   >
                     {message.type === "bot" && (
-                      <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
+                      <Avatar
+                        sx={{ bgcolor: "primary.main", width: 36, height: 36 }}
+                      >
                         <BotIcon />
                       </Avatar>
                     )}
@@ -198,7 +202,8 @@ const AIChat = () => {
                         variant="body1"
                         sx={{
                           fontSize: "1rem",
-                          fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif",
+                          fontFamily:
+                            "'Segoe UI', 'Roboto', 'Arial', sans-serif",
                           wordBreak: "break-word",
                           whiteSpace: "pre-wrap",
                           lineHeight: 1.7,
@@ -208,7 +213,14 @@ const AIChat = () => {
                       </Typography>
                     </Paper>
                     {message.type === "user" && (
-                      <Avatar sx={{ bgcolor: "grey.400", color: "black", width: 36, height: 36 }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: "grey.400",
+                          color: "black",
+                          width: 36,
+                          height: 36,
+                        }}
+                      >
                         <ChatIcon />
                       </Avatar>
                     )}
