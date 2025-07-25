@@ -20,10 +20,14 @@ const DeviceInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
   useEffect(() => {
     const fetchDeviceInfo = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/device-status/${deviceId}`);
+        const response = await axios.get(
+          `${API_BASE_URL}/device-status/${deviceId}`
+        );
         setDevice(response.data);
         setError(null);
       } catch (err) {
@@ -35,7 +39,9 @@ const DeviceInfo = () => {
 
     const fetchSensorData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/sensor-data/${deviceId}`);
+        const response = await axios.get(
+          `${API_BASE_URL}/sensor-data/${deviceId}`
+        );
         setSensorData(response.data);
       } catch (err) {
         console.error("Failed to fetch sensor data", err);
@@ -48,7 +54,12 @@ const DeviceInfo = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="300px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -77,14 +88,20 @@ const DeviceInfo = () => {
         Status: <strong>{device.status}</strong>
       </Typography>
       <Typography variant="body1" color="text.secondary">
-        Last Check: <strong>{new Date(device.last_check).toLocaleString()}</strong>
+        Last Check:{" "}
+        <strong>{new Date(device.last_check).toLocaleString()}</strong>
       </Typography>
       <Typography variant="h6" fontWeight="bold" mt={2}>
         Sensor Data:
       </Typography>
       {Object.keys(device.sensors).map((sensor, idx) => (
         <Box key={sensor} sx={{ height: 300, mb: 4 }}>
-          <Typography variant="subtitle1" fontWeight="bold" color="primary" gutterBottom>
+          <Typography
+            variant="subtitle1"
+            fontWeight="bold"
+            color="primary"
+            gutterBottom
+          >
             {sensor.replace("_", " ")}
           </Typography>
           <ResponsiveContainer width="100%" height="100%">
@@ -110,4 +127,4 @@ const DeviceInfo = () => {
   );
 };
 
-export default DeviceInfo; 
+export default DeviceInfo;

@@ -61,12 +61,14 @@ const Reports = () => {
   const [timeRange, setTimeRange] = useState("24h");
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const [metricsRes, alertsRes] = await Promise.all([
-        axios.get("http://localhost:8000/reports/device-metrics"),
-        axios.get("http://localhost:8000/reports/alert-analysis"),
+        axios.get(`${API_BASE_URL}/reports/device-metrics`),
+        axios.get(`${API_BASE_URL}/reports/alert-analysis`),
       ]);
 
       setDeviceMetrics(metricsRes.data);
@@ -121,20 +123,22 @@ const Reports = () => {
   const getFilteredSensorData = () => {
     if (!deviceMetrics.length) return [];
 
-    const device = deviceMetrics.find(d => d.device_id === selectedDevice);
+    const device = deviceMetrics.find((d) => d.device_id === selectedDevice);
     if (!device || !device.sensor_metrics) return [];
 
     const metrics = device.sensor_metrics[selectedMetric];
     if (!metrics) return [];
 
-    return [{
-      name: "Current",
-      value: metrics.current,
-      average: metrics.average,
-      min: metrics.min,
-      max: metrics.max,
-      trend: metrics.trend
-    }];
+    return [
+      {
+        name: "Current",
+        value: metrics.current,
+        average: metrics.average,
+        min: metrics.min,
+        max: metrics.max,
+        trend: metrics.trend,
+      },
+    ];
   };
 
   const exportToPDF = async () => {
@@ -152,13 +156,25 @@ const Reports = () => {
 
     pdf.setFontSize(18);
     pdf.text("Predictive Maintenance Report", 20, 20);
-    pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.addImage(
+      imgData,
+      "PNG",
+      imgX,
+      imgY,
+      imgWidth * ratio,
+      imgHeight * ratio
+    );
     pdf.save("maintenance-report.pdf");
   };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -174,7 +190,12 @@ const Reports = () => {
 
   return (
     <Box p={3} id="reports-container">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
         <Typography variant="h4">Maintenance Reports</Typography>
         <Box>
           <Tooltip title="Refresh Data">
@@ -193,7 +214,11 @@ const Reports = () => {
         </Box>
       </Box>
 
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: "block" }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ mb: 2, display: "block" }}
+      >
         Last Updated: {lastUpdate.toLocaleString()}
       </Typography>
 
@@ -351,9 +376,17 @@ const Reports = () => {
                   <YAxis />
                   <RechartsTooltip />
                   <Legend />
-                  <Bar dataKey="critical" fill="#f44336" name="Critical Alerts" />
+                  <Bar
+                    dataKey="critical"
+                    fill="#f44336"
+                    name="Critical Alerts"
+                  />
                   <Bar dataKey="warning" fill="#ff9800" name="Warning Alerts" />
-                  <Bar dataKey="resolved" fill="#4caf50" name="Resolved Alerts" />
+                  <Bar
+                    dataKey="resolved"
+                    fill="#4caf50"
+                    name="Resolved Alerts"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Box>

@@ -158,9 +158,9 @@ const Dashboard = () => {
     try {
       const [predictionsResponse, alertsResponse, devicesResponse] =
         await Promise.all([
-          fetch("http://localhost:8000/dashboard/predictions"),
-          fetch("http://localhost:8000/alerts"),
-          fetch("http://localhost:8000/devices"),
+          fetch(`${API_BASE_URL}/dashboard/predictions`),
+          fetch(`${API_BASE_URL}/alerts`),
+          fetch(`${API_BASE_URL}/devices`),
         ]);
 
       if (
@@ -312,7 +312,7 @@ const Dashboard = () => {
         alerts.map(async (alert) => {
           try {
             const response = await fetch(
-              `http://localhost:8000/predictions/analysis/${alert.id}`
+              `${API_BASE_URL}/predictions/analysis/${alert.id}`
             );
             if (response.ok) {
               const data = await response.json();

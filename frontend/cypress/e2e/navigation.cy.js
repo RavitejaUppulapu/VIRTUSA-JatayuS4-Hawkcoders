@@ -52,7 +52,8 @@ describe("PMBI Navigation Tests", () => {
   });
 
   it("Navigates to specific device status page", () => {
-    cy.request("http://localhost:8000/devices").then((response) => {
+    const API_BASE_URL = Cypress.env("API_BASE_URL") || "http://localhost:8000";
+    cy.request(`${API_BASE_URL}/devices`).then((response) => {
       const deviceId = response.body[0]?.id;
       if (!deviceId) {
         throw new Error("No devices found in backend");

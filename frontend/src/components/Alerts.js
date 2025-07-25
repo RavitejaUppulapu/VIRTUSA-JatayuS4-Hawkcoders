@@ -96,12 +96,14 @@ const Alerts = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [alertsResponse, devicesResponse] = await Promise.all([
-        fetch("http://localhost:8000/alerts"),
-        fetch("http://localhost:8000/devices"),
+        fetch(`${API_BASE_URL}/alerts`),
+        fetch(`${API_BASE_URL}/devices`),
       ]);
 
       if (!alertsResponse.ok || !devicesResponse.ok) {
@@ -246,10 +248,11 @@ const Alerts = () => {
     // If the alert is resolved, fetch the resolution notes
     if (alert.acknowledged) {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/alerts/${alert.id}/notes`
+        const response = await fetch(
+          `${API_BASE_URL}/alerts/${alert.id}/notes`
         );
-        setResolutionNotes(response.data.notes || "");
+        const data = await response.json();
+        setResolutionNotes(data.notes || "");
       } catch (error) {
         console.error("Error fetching resolution notes:", error);
       }
@@ -271,14 +274,17 @@ const Alerts = () => {
     }
 
     try {
-      const response = await axios.post(
-        `http://localhost:8000/alerts/${selectedAlert.id}/acknowledge`,
-        {
+      await fetch(`${API_BASE_URL}/alerts/${selectedAlert.id}/acknowledge`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           acknowledged: true,
           notes: resolutionNotes,
           resolution_timestamp: new Date().toISOString(),
-        }
-      );
+        }),
+      });
 
       // Update alerts state
       setAlerts((prevAlerts) =>
