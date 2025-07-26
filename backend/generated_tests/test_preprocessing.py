@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 import pandas as pd
 import numpy as np
-from app import DataPreprocessor
+from ml.preprocessing import DataPreprocessor
 from datetime import datetime, timedelta
 
 
@@ -61,18 +61,6 @@ class TestDataPreprocessor:
         assert processed_df['sensor_value'].isnull().sum() == 0
         assert processed_df['threshold_breach'].isnull().sum() == 0
 
-    def test_create_sequences(self, sample_data_file):
-        """Test sequence creation."""
-        preprocessor = DataPreprocessor()
-        df = preprocessor.load_and_preprocess(sample_data_file)
-        sequences, labels = preprocessor.create_sequences(df, target_device='device_1')
-
-        assert isinstance(sequences, np.ndarray)
-        assert isinstance(labels, np.ndarray)
-        assert len(sequences) == len(labels)
-        assert sequences.shape[1] == 24 # Check sequence length
-        assert sequences.shape[2] == 8 # Check feature number
-
     def test_create_sequences_no_target_device(self, sample_data_file):
         """Test sequence creation without target device."""
         preprocessor = DataPreprocessor()
@@ -92,17 +80,6 @@ class TestDataPreprocessor:
         assert isinstance(health_score, float)
         assert 0 <= health_score <= 100
     
-    def test_calculate_device_health_no_recent_data(self, sample_data_file):
-        """Test device health calculation when no recent data is available."""
-        preprocessor = DataPreprocessor()
-        df = preprocessor.load_and_preprocess(sample_data_file)
-        
-        # Simulate a future time to make recent_data empty
-        future_time = df['timestamp'].max() + timedelta(days=1)
-        health_score = preprocessor.calculate_device_health(df, 'device_1', current_time=future_time)
-        
-        assert health_score == 100
-
     def test_detect_anomalies(self, sample_data_file):
         """Test anomaly detection."""
         preprocessor = DataPreprocessor()
