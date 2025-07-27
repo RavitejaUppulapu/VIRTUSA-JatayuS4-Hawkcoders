@@ -545,12 +545,12 @@ const Alerts = () => {
 
   return (
     <Box sx={{ maxWidth: "1400px", margin: "0 auto", p: { xs: 1, sm: 2 } }}>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h4" gutterBottom>
         Alert Management System
       </Typography>
 
       {/* Alert Statistics */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={3}>
           <Card
             sx={{ bgcolor: "#ffebee", border: 1, borderColor: "error.main" }}

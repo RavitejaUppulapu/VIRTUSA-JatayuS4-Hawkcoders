@@ -72,7 +72,7 @@ const Layout = ({ children }) => {
           flexGrow: 1,
           bgcolor: "background.default",
           p: 3,
-          mt: 8,
+          mt: 5,
           minHeight: "100vh",
         }}
       >
