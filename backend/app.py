@@ -54,7 +54,7 @@ settings = {
         "disk_usage": {"warning": 70, "critical": 95},
         "fuel_level": {"warning": 10, "critical": 15},
         "packet_loss": {"warning": 0.5, "critical": 5.0},
-        "bandwidth": {"warning": 300, "critical": 100},
+        "bandwidth": {"warning": 100, "critical": 300},
         "power": {"warning": 3.0, "critical": 6.0},
         "read_latency": {"warning": 1.0, "critical": 5.0},
     },

@@ -11,6 +11,7 @@ import {
   Drawer,
   CircularProgress,
   Avatar,
+  Fade,
 } from "@mui/material";
 import {
   Send as SendIcon,
@@ -32,6 +33,7 @@ const AIChat = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,6 +42,16 @@ const AIChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Show welcome bubble for 5 seconds or until chat is opened
+  useEffect(() => {
+    if (open) {
+      setShowWelcome(false);
+    } else {
+      const timer = setTimeout(() => setShowWelcome(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -99,17 +111,85 @@ const AIChat = () => {
 
   return (
     <>
-      <Fab
-        color="primary"
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          right: 16,
-        }}
-        onClick={() => setOpen(true)}
-      >
-        <ChatIcon />
-      </Fab>
+      {/* Improved Floating Welcome Bubble with Fade and top-right close button */}
+      <Fade in={showWelcome && !open} timeout={{ enter: 400, exit: 600 }} unmountOnExit>
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 80,
+            right: 24,
+            zIndex: 1301,
+            pointerEvents: "none",
+          }}
+        >
+          <Paper
+            elevation={6}
+            sx={{
+              position: "relative",
+              p: 2.5,
+              pr: 4,
+              borderRadius: 3,
+              bgcolor: "background.paper",
+              maxWidth: 320,
+              minWidth: 220,
+              fontSize: "1rem",
+              fontFamily: "'Segoe UI', 'Roboto', 'Arial', sans-serif",
+              boxShadow: 4,
+              pointerEvents: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            {/* Close button at top-right, not inline with content */}
+            <IconButton
+              size="small"
+              onClick={() => setShowWelcome(false)}
+              sx={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                color: "grey.600",
+                zIndex: 2,
+              }}
+              aria-label="Close welcome message"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+            <Avatar sx={{ bgcolor: "primary.main", width: 36, height: 36 }}>
+              <BotIcon />
+            </Avatar>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 500,
+                fontSize: "1rem",
+                flex: 1,
+                ml: 1,
+              }}
+            >
+              How can I help you?
+            </Typography>
+          </Paper>
+        </Box>
+      </Fade>
+
+      {/* Only show the FAB when chat is closed */}
+      {!open && (
+        <Fab
+          color="primary"
+          sx={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            zIndex: 1302,
+          }}
+          onClick={() => setOpen(true)}
+          aria-label="Open AI Chatbot"
+        >
+          <ChatIcon />
+        </Fab>
+      )}
 
       <Drawer
         anchor="right"

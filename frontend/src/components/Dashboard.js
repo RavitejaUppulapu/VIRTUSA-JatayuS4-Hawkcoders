@@ -1866,7 +1866,7 @@ const Dashboard = () => {
             <Grid item xs={12}>
               <Paper sx={{ p: 2, mb: 3 }}>{renderAlerts()}</Paper>
             </Grid>
-            <Grid item xs={12}>
+            {/* <Grid item xs={12}>
               <Paper sx={{ p: 2 }}>
                 <Box
                   sx={{
@@ -1891,7 +1891,7 @@ const Dashboard = () => {
                 </Box>
                 {renderEnvironmentalIssues()}
               </Paper>
-            </Grid>
+            </Grid> */}
           </Grid>
         </Box>
       )}
@@ -1907,9 +1907,9 @@ const Dashboard = () => {
 
       {selectedTab === 2 && (
         <Box>
-          <Typography variant="h6" gutterBottom>
-            Maintenance
-          </Typography>
+          {/* <Typography variant="h6" gutterBottom>
+            Maintenancefdhhfd
+          </Typography> */}
           <MaintenanceTab />
         </Box>
       )}

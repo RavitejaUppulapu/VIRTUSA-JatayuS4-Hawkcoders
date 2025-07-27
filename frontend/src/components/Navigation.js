@@ -42,8 +42,9 @@ const Navigation = ({ open, setOpen }) => {
     >
       <Box sx={{ display: "flex", alignItems: "center", p: 2 }}>
         <Typography variant="h6" noWrap component="div">
-          Maintenance System
+          PMBI
         </Typography>
+        <Box sx={{ flexGrow: 1 }} />
         <IconButton onClick={() => setOpen(false)}>
           <ChevronLeftIcon />
         </IconButton>
