@@ -60,7 +60,7 @@ const Layout = ({ children }) => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div">
-            Predictive Maintenance System
+          Predictive maintenance of banking infrastructure
           </Typography>
         </Toolbar>
       </AppBar>
