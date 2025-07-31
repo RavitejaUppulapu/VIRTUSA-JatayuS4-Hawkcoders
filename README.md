@@ -28,24 +28,28 @@ A comprehensive predictive maintenance system for banking infrastructure, levera
 ## Tech Stack
 
 ### Frontend
-- React.js
-- Material-UI
-- Recharts for data visualization
-- Axios for API communication
-- TypeScript (partial implementation)
+- React.js 18.2.0
+- Material-UI (MUI) 5.17.1
+- Recharts 2.15.2 for data visualization
+- Chart.js 4.4.1 with react-chartjs-2 5.2.0
+- Axios 1.8.4 for API communication
+- React Router DOM 6.30.0 for routing
+- Cypress 14.5.1 for E2E testing
 
 ### Backend
-- FastAPI (Python)
-- TensorFlow for ML models
-- SQLAlchemy for database operations
-- Pandas for data processing
-- Machine Learning models for predictive analysis
+- FastAPI 0.104.1 (Python)
+- TensorFlow 2.10.0+ for ML models
+- Scikit-learn 1.3.2 for machine learning
+- Pandas 1.5.0+ for data processing
+- NumPy 1.21.0+ for numerical operations
+- SQLAlchemy 2.0.23 for database operations
+- OpenAI 1.1.0+ for AI integration
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- Python 3.8+
+- Node.js (v18 or higher)
+- Python 3.10+
 - pip
 - Git
 
@@ -73,6 +77,17 @@ npm install
 npm start
 ```
 
+4. Run E2E tests (optional)
+```bash
+cd frontend
+npx cypress open
+```
+
+5. Alternative: Use the main runner script
+```bash
+python run.py
+```
+
 The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
@@ -94,28 +109,76 @@ PMBI/
 │   │   │   ├── Settings.js         # System configuration
 │   │   │   ├── MaintenanceTab.js   # Maintenance scheduling
 │   │   │   ├── WhyChooseUs.js      # Feature showcase
+│   │   │   ├── FailureAnalysis.js  # Failure prediction and analysis
 │   │   │   ├── Layout.js           # Application layout
 │   │   │   └── Navigation.js       # Navigation components
+│   │   ├── App.js          # Main application component
+│   │   ├── App.css         # Application styles
+│   │   ├── index.js        # Application entry point
+│   │   └── index.css       # Global styles
 │   ├── public/             # Static assets
 │   │   ├── index.html     # HTML template
-│   │   └── assets/        # Images and media
-│   ├── js/                # JavaScript utilities
+│   │   ├── manifest.json  # PWA manifest
+│   │   └── bank_logo.ico  # Application icon
+│   ├── cypress/           # E2E testing
+│   │   ├── e2e/          # Test files
+│   │   │   ├── alert-resolution.cy.js
+│   │   │   ├── alerts.cy.js
+│   │   │   ├── chatbot.cy.js
+│   │   │   ├── dashboard.cy.js
+│   │   │   ├── deviceStatus.cy.js
+│   │   │   ├── navigation.cy.js
+│   │   │   ├── reports.cy.js
+│   │   │   ├── settings.cy.js
+│   │   │   └── WhyChooseUs.cy.js
+│   │   ├── downloads/     # Test downloads
+│   │   └── cypress.config.js # Cypress configuration
 │   ├── package.json       # Node.js dependencies
 │   ├── package-lock.json  # Dependency lock file
-│   └── nginx.conf         # Nginx configuration
+│   └── nginx.conf         # Nginx configuration for Docker
 ├── backend/                # Backend application
 │   ├── app.py             # FastAPI main application
 │   ├── ml_model.py        # ML model implementation
 │   ├── requirements.txt   # Python dependencies
+│   ├── runtime.txt        # Python runtime specification
 │   ├── ml/                # Machine learning utilities
-│   └── alerts.json        # Alert configurations
+│   │   ├── model.py       # Model definitions
+│   │   ├── preprocessing.py # Data preprocessing
+│   │   └── train.py       # Training scripts
+│   ├── tests/             # Backend tests
+│   │   ├── tests.py       # Test implementations
+│   │   └── __init__.py
+│   ├── generated_tests/   # Auto-generated tests
+│   │   ├── test_app.py
+│   │   ├── test_ml_model.py
+│   │   ├── test_model.py
+│   │   ├── test_preprocessing.py
+│   │   └── test_train.py
+│   ├── alerts.json        # Alert configurations
+│   ├── generate_backend_tests.py # Test generation script
+│   ├── README_GENAI_TESTS.md # Test documentation
+│   └── venv/              # Python virtual environment
 ├── data/                   # Data storage directory
-├── models/                 # Trained ML models
-├── data_generator.py       # Data generation script
+│   ├── models/            # Trained ML models
+│   │   ├── predictive_model.h5
+│   │   ├── scaler.joblib
+│   │   └── training_history.csv
+│   ├── processed/         # Processed data
+│   └── raw/              # Raw data files
+│       ├── combined_data.csv
+│       ├── log_data.csv
+│       └── sensor_data.csv
+├── models/                 # Additional ML models
+│   ├── lstm_model.h5
+│   └── model_params.joblib
+├── data_generator.py       # Synthetic data generation script
 ├── run.py                 # Main application runner
-├── requirements.txt       # Python dependencies
-├── .gitignore            # Git ignore rules
-└── training_history.png   # Training history visualization
+├── requirements.txt       # Root Python dependencies
+├── Dockerfile.backend     # Backend Docker configuration
+├── Dockerfile.frontend    # Frontend Docker configuration
+├── docker-compose.yml     # Docker Compose configuration
+├── training_history.png   # Training history visualization
+└── .gitignore            # Git ignore rules
 ```
 
 ## Key Features
@@ -141,6 +204,37 @@ PMBI/
 - Cost tracking and analysis
 - Configuration management
 
+### Testing
+- Comprehensive E2E testing with Cypress
+- Backend unit tests
+- Auto-generated test suites
+- Test coverage for all major components
+
+### Data Generation
+- Synthetic sensor data generation
+- Log data simulation
+- Realistic banking infrastructure scenarios
+- Configurable data parameters
+
+## Docker Deployment
+
+The project includes Docker configuration for easy deployment:
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or build individually
+docker build -f Dockerfile.backend -t pmbi-backend .
+docker build -f Dockerfile.frontend -t pmbi-frontend .
+```
+
+### Docker Architecture
+- **Backend**: Python 3.10-slim with FastAPI
+- **Frontend**: Node.js 18 build with Nginx serving
+- **Data Volumes**: Persistent storage for models and data
+- **Network**: Frontend proxies API calls to backend
+
 ## Contributing
 
 1. Fork the repository
@@ -156,6 +250,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Material-UI for the component library
-- Recharts for the charting library
+- Recharts and Chart.js for the charting libraries
 - FastAPI for the backend framework
-- TensorFlow for machine learning capabilities
+- TensorFlow and Scikit-learn for machine learning capabilities
+- Cypress for E2E testing framework
+- Gemini for AI integration
