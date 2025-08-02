@@ -1,4 +1,4 @@
-# Predictive Maintenance Banking Infrastructure (PMBI)
+# Predictive Maintenance for Banking Infrastructure (PMBI)
 
 A comprehensive predictive maintenance system for banking infrastructure, leveraging real-time monitoring, analytics, and machine learning to prevent equipment failures and optimize maintenance schedules.
 
