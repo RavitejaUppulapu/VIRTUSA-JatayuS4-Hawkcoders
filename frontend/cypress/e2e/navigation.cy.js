@@ -4,7 +4,7 @@ describe("PMBI Navigation Tests", () => {
   });
 
   it("Visits the React App and checks for title", () => {
-    cy.contains("Predictive maintenance of banking infrastructure");
+    cy.contains("Predictive maintenance for banking infrastructure");
   });
 
   it("Navigates to Dashboard", () => {
