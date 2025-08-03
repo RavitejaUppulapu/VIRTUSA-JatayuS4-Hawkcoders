@@ -767,9 +767,10 @@ async def chat_with_ai(message: ChatMessage):
     except Exception:
         alerts_data = []
     alerts_context = "\n".join(
-        f"- {a.get('device_id', 'Unknown')}: {a.get('message', '')} (Severity: {a.get('severity', 0)})"
-        for a in alerts_data[:10]
-    )
+    f"- Device: {a.get('device_id', 'Unknown')} | Type: {a.get('type', '')} | Severity: {a.get('severity', 0)} | "
+    f"Timestamp: {a.get('timestamp', '')} | Message: {a.get('message', '')} | Acknowledged: {a.get('acknowledged', False)}"
+    for a in alerts_data
+)
     # Only handle help/greeting directly; all other queries (including alerts) use Gemini
     if "help" in msg or "help me" in msg or "help me with" in msg or "hi" in msg or "hello" in msg or "hi there" in msg or "hello there" in msg:
         return {"response": "Hi! 👋 I can assist you with the following queries:\n• Show all alerts\n• List critical devices\n• List warning devices\n• List info (operational) devices\n\nJust type your question, for example: 'Show all alerts' or 'List critical devices'."}

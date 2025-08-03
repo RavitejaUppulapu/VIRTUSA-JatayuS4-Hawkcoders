@@ -1,1 +1,92 @@
-[{"id": "278f98ba-fc50-4114-a911-8f54a0e9b679", "timestamp": "2025-07-27T11:13:41.213552", "device_id": "device_2", "type": "critical", "severity": 10, "message": "Abnormal behavior detected in temperature sensor", "acknowledged": false}, {"id": "10ea7207-7a6e-414a-8511-cdea8fb868c0", "timestamp": "2025-07-30T11:13:41.213552", "device_id": "device_2", "type": "critical", "severity": 10, "message": "Abnormal behavior detected in temperature sensor", "acknowledged": false}, {"id": "657bb5ad-c524-4690-ad6e-79c0ea1fe2fa", "timestamp": "2025-07-25T11:13:41.213552", "device_id": "device_5", "type": "warning", "severity": 6, "message": "Abnormal behavior detected in temperature sensor", "acknowledged": false}, {"id": "13480787-9417-4e79-ab3d-ad17665a1101", "timestamp": "2025-07-30T11:13:41.213552", "device_id": "device_3", "type": "warning", "severity": 3, "message": "Abnormal behavior detected in temperature sensor", "acknowledged": false}, {"id": "c4d31817-05cc-486b-82f9-17b78018c8e6", "timestamp": "2025-07-30T11:13:41.213552", "device_id": "device_2", "type": "critical", "severity": 9, "message": "Abnormal behavior detected in power supply", "acknowledged": false}, {"id": "59eae6f4-4515-42df-9b86-4a9fbe587063", "timestamp": "2025-07-26T11:13:41.213552", "device_id": "device_3", "type": "critical", "severity": 10, "message": "Abnormal behavior detected in humidity sensor", "acknowledged": false}, {"id": "26e85a7e-f250-4158-b8c6-acf99d4fbf0a", "timestamp": "2025-07-24T11:13:41.213552", "device_id": "device_3", "type": "critical", "severity": 7, "message": "Abnormal behavior detected in humidity sensor", "acknowledged": false}, {"id": "684ed369-4d7e-45dd-8742-a69e0c1a0692", "timestamp": "2025-07-26T11:13:41.213552", "device_id": "device_3", "type": "critical", "severity": 9, "message": "Abnormal behavior detected in cooling system", "acknowledged": false}, {"id": "dd3640e8-7f01-4753-b2ae-3a2b1ced72d2", "timestamp": "2025-07-25T11:13:41.213552", "device_id": "device_3", "type": "critical", "severity": 8, "message": "Abnormal behavior detected in network interface", "acknowledged": false}, {"id": "9389587f-271f-4177-b8fb-cebefaded318", "timestamp": "2025-07-26T11:13:41.213552", "device_id": "device_3", "type": "critical", "severity": 8, "message": "Abnormal behavior detected in humidity sensor", "acknowledged": false}]
+[
+  {
+    "id": "a1115f90-2db1-4e08-a176-8cb2ecb6a2fd",
+    "timestamp": "2025-07-30T14:56:04.917472",
+    "device_id": "device_4",
+    "type": "warning",
+    "severity": 2,
+    "message": "Abnormal behavior detected in temperature sensor",
+    "acknowledged": false
+  },
+  {
+    "id": "fcc9b909-5d50-4dcb-b47c-7e5fbf5602e3",
+    "timestamp": "2025-08-01T14:56:04.917472",
+    "device_id": "device_3",
+    "type": "critical",
+    "severity": 10,
+    "message": "Abnormal behavior detected in humidity sensor",
+    "acknowledged": false
+  },
+  {
+    "id": "24a7891c-e66f-49a7-87cb-bd4fdaca11af",
+    "timestamp": "2025-07-28T14:56:04.917472",
+    "device_id": "device_1",
+    "type": "warning",
+    "severity": 1,
+    "message": "Abnormal behavior detected in cooling system",
+    "acknowledged": false
+  },
+  {
+    "id": "81ed3ec8-0571-4d05-9d8b-3631be267d3f",
+    "timestamp": "2025-07-28T14:56:04.917472",
+    "device_id": "device_1",
+    "type": "warning",
+    "severity": 6,
+    "message": "Abnormal behavior detected in power supply",
+    "acknowledged": false
+  },
+  {
+    "id": "60eb75f2-f565-4e31-b53a-4a74420b662a",
+    "timestamp": "2025-08-01T14:56:04.917472",
+    "device_id": "device_5",
+    "type": "warning",
+    "severity": 5,
+    "message": "Abnormal behavior detected in humidity sensor",
+    "acknowledged": false
+  },
+  {
+    "id": "8d1ea39f-c0f4-4732-a5e2-5290c8659f52",
+    "timestamp": "2025-07-29T14:56:04.917472",
+    "device_id": "device_1",
+    "type": "warning",
+    "severity": 3,
+    "message": "Abnormal behavior detected in cooling system",
+    "acknowledged": false
+  },
+  {
+    "id": "4bdba886-978a-43ff-bfa8-27719ea870e4",
+    "timestamp": "2025-07-29T14:56:04.917472",
+    "device_id": "device_3",
+    "type": "critical",
+    "severity": 10,
+    "message": "Abnormal behavior detected in cooling system",
+    "acknowledged": false
+  },
+  {
+    "id": "bf652b41-4d9b-4439-ad5e-89caa6163588",
+    "timestamp": "2025-08-03T14:56:04.917472",
+    "device_id": "device_2",
+    "type": "warning",
+    "severity": 5,
+    "message": "Abnormal behavior detected in power supply",
+    "acknowledged": false
+  },
+  {
+    "id": "33a30ba7-c9cd-4dce-a79b-4ee5c4b245db",
+    "timestamp": "2025-07-30T14:56:04.917472",
+    "device_id": "device_2",
+    "type": "warning",
+    "severity": 2,
+    "message": "Abnormal behavior detected in power supply",
+    "acknowledged": false
+  },
+  {
+    "id": "41ae5f38-69af-4fbb-be0c-bd10569de930",
+    "timestamp": "2025-08-01T14:56:04.917472",
+    "device_id": "device_5",
+    "type": "critical",
+    "severity": 9,
+    "message": "Abnormal behavior detected in network interface",
+    "acknowledged": false
+  }
+]
