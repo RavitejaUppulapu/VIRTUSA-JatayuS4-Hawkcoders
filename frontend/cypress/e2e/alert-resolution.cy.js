@@ -47,7 +47,7 @@ describe("PMBI Alert Resolution Tests", () => {
   describe("Alert Acknowledgment and Resolution Flow", () => {
     beforeEach(() => {
       cy.visit("http://localhost:3000/alerts");
-      cy.contains("h5", "Alert Management System").should("be.visible");
+      cy.contains("h4", "Alert Management System").should("be.visible");
     });
 
     it("should resolve an active alert and verify its details in the resolved list", function () {

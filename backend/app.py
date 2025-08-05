@@ -756,34 +756,93 @@ if gemini_api_key:
 # Initialize Gemini client
 client = genai.Client()
 
+@app.get("/alerts/statistics", summary="Get Alert Statistics", description="Get accurate statistics for all alerts by severity and status.")
+async def get_alert_statistics():
+    """Get accurate alert statistics"""
+    try:
+        # Load alerts from disk to ensure we have the latest data
+        current_alerts = load_alerts_from_disk()
+        
+        # Calculate statistics using the same logic as frontend
+        total_alerts = len(current_alerts)
+        critical_alerts = len([a for a in current_alerts if a["severity"] >= 7 and not a.get("acknowledged", False)])
+        warning_alerts = len([a for a in current_alerts if 4 <= a["severity"] < 7 and not a.get("acknowledged", False)])
+        info_alerts = len([a for a in current_alerts if a["severity"] < 4 and not a.get("acknowledged", False)])
+        resolved_alerts = len([a for a in current_alerts if a.get("acknowledged", False)])
+        
+        return {
+            "total": total_alerts,
+            "critical": critical_alerts,
+            "warning": warning_alerts,
+            "info": info_alerts,
+            "resolved": resolved_alerts,
+            "active": total_alerts - resolved_alerts
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/ai-chat", summary="AI Chat", description="Interact with the AI assistant for maintenance and monitoring advice.")
 async def chat_with_ai(message: ChatMessage):
     user_message = message.message.strip()
     msg = user_message.lower()
-    # Load alerts context
+    
+    # Get accurate alert statistics
+    try:
+        alert_stats = await get_alert_statistics()
+        stats_context = f"Current Alert Statistics: Total={alert_stats['total']}, Critical={alert_stats['critical']}, Warning={alert_stats['warning']}, Info={alert_stats['info']}, Resolved={alert_stats['resolved']}"
+    except Exception:
+        alert_stats = {"total": 0, "critical": 0, "warning": 0, "info": 0, "resolved": 0}
+        stats_context = "Alert statistics unavailable"
+    
+    # Load alerts context with severity-based classification
     try:
         with open("alerts.json", "r") as f:
             alerts_data = json.load(f)
     except Exception:
         alerts_data = []
-    alerts_context = "\n".join(
-    f"- Device: {a.get('device_id', 'Unknown')} | Type: {a.get('type', '')} | Severity: {a.get('severity', 0)} | "
-    f"Timestamp: {a.get('timestamp', '')} | Message: {a.get('message', '')} | Acknowledged: {a.get('acknowledged', False)}"
-    for a in alerts_data
-)
+    
+    # Generate alerts_context using severity-based classification
+    alerts_context_parts = []
+    for a in alerts_data:
+        severity = a.get('severity', 0)
+        # Determine alert type based on severity (same logic as frontend)
+        if severity >= 7:
+            alert_type = "critical"
+        elif severity >= 4:
+            alert_type = "warning"
+        else:
+            alert_type = "info"
+        
+        alerts_context_parts.append(
+            f"- On {a.get('timestamp', '')}, device {a.get('device_name', 'Unknown')} raised a {alert_type} alert "
+            f"(severity {severity}): {a.get('message', '')}. "
+            f"Acknowledged: {a.get('acknowledged', False)}."
+        )
+    
+    alerts_context = "\n".join(alerts_context_parts)
+    print(alerts_context)
+    
     # Only handle help/greeting directly; all other queries (including alerts) use Gemini
     if "help" in msg or "help me" in msg or "help me with" in msg or "hi" in msg or "hello" in msg or "hi there" in msg or "hello there" in msg:
         return {"response": "Hi! 👋 I can assist you with the following queries:\n• Show all alerts\n• List critical devices\n• List warning devices\n• List info (operational) devices\n\nJust type your question, for example: 'Show all alerts' or 'List critical devices'."}
+    
     # Otherwise, use Gemini generative model for all alert-related and open-ended queries
     prompt = (
         "You are an intelligent assistant specialized in predictive maintenance for banking infrastructure (PMBI).\n"
         "Your role is to interpret system-generated alerts and provide precise, actionable recommendations.\n\n"
+        f"{stats_context}\n\n"
         "System Context:\n"
         f"{alerts_context}\n\n"
+        "Alert Classification Rules:\n"
+        "- Critical alerts: severity >= 7\n"
+        "- Warning alerts: severity >= 4 AND severity < 7\n"
+        "- Info alerts: severity < 4\n"
+        "- Only count non-acknowledged alerts (acknowledged: false)\n\n"
         "User Query:\n"
         f"{user_message}\n\n"
         "Instructions:\n"
-        "- Analyze the alerts above and the user’s query.\n"
+        "- Analyze the alerts above and the user's query.\n"
+        "- For alert count questions, use the statistics provided above.\n"
         "- Focus on identifying the most critical issues first.\n"
         "- Keep your response shorter as possible, clear, and solution-oriented.\n"
         "- Avoid unnecessary technical jargon unless requested.\n"

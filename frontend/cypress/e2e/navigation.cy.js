@@ -22,12 +22,28 @@ describe("PMBI Navigation Tests", () => {
   });
 
   it("Navigates to Alerts", () => {
+    // Open the navigation menu
     cy.get('[data-testid="MenuIcon"]').click();
-    cy.contains("Alerts").click({ force: true });
-    cy.get("body").then(() => {
-      cy.url({ timeout: 8000 }).should("include", "/alerts");
+    
+    // Wait for the drawer to be visible
+    cy.get('.MuiDrawer-paper').should('be.visible');
+    
+    // Try multiple approaches to click the Alerts link
+    cy.get('body').then(($body) => {
+      // First try to find the link by href
+      if ($body.find('a[href="/alerts"]').length > 0) {
+        cy.get('a[href="/alerts"]').click();
+      } else {
+        // Fallback to clicking by text within the drawer
+        cy.get('.MuiDrawer-paper').contains("Alerts").click();
+      }
     });
-    cy.contains("Alert Management System");
+    
+    // Wait for navigation to complete
+    cy.url({ timeout: 10000 }).should("include", "/alerts");
+    
+    // Verify the page content loaded
+    cy.contains("Alert Management System", { timeout: 10000 }).should("be.visible");
   });
 
   it("Navigates to Reports", () => {

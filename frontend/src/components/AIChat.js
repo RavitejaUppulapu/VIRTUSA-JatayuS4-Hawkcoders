@@ -215,7 +215,7 @@ const AIChat = () => {
               <BotIcon color="primary" />
               <Typography variant="h6">AI Maintenance Assistant</Typography>
             </Box>
-            <IconButton onClick={() => setOpen(false)}>
+            <IconButton onClick={() => setOpen(false)} data-testid="chat-close-button">
               <CloseIcon />
             </IconButton>
           </Paper>

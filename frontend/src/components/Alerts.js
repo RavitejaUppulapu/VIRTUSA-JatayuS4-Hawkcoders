@@ -101,17 +101,19 @@ const Alerts = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [alertsResponse, devicesResponse] = await Promise.all([
+      const [alertsResponse, devicesResponse, statsResponse] = await Promise.all([
         fetch(`${API_BASE_URL}/alerts`),
         fetch(`${API_BASE_URL}/devices`),
+        fetch(`${API_BASE_URL}/alerts/statistics`),
       ]);
 
-      if (!alertsResponse.ok || !devicesResponse.ok) {
+      if (!alertsResponse.ok || !devicesResponse.ok || !statsResponse.ok) {
         throw new Error("Failed to fetch data");
       }
 
       const alertsData = await alertsResponse.json();
       const devicesData = await devicesResponse.json();
+      const statsData = await statsResponse.json();
 
       // Process alerts data with improved error handling
       const processedAlerts = alertsData
@@ -161,19 +163,18 @@ const Alerts = () => {
       setAlerts(processedAlerts);
       setDevices(devicesData);
 
-      // Update statistics with improved error handling
+      // Use statistics from backend for consistency
       const newStats = {
-        critical: processedAlerts.filter(
-          (a) => !a.acknowledged && a.severity >= 7
-        ).length,
-        warning: processedAlerts.filter(
-          (a) => !a.acknowledged && a.severity >= 4 && a.severity < 7
-        ).length,
-        info: processedAlerts.filter((a) => !a.acknowledged && a.severity < 4)
-          .length,
-        resolved: processedAlerts.filter((a) => a.acknowledged).length,
+        critical: statsData.critical,
+        warning: statsData.warning,
+        info: statsData.info,
+        resolved: statsData.resolved,
       };
       setStats(newStats);
+
+      // Debug logging to verify alert counts
+      console.log("Alert Statistics from Backend:", statsData);
+      console.log("Frontend Stats:", newStats);
 
       // Update alert trends with improved error handling
       const trendData = generateTrendData(processedAlerts);
